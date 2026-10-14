@@ -914,7 +914,14 @@ function onHostData(conn, d) {
     sendState(p); renderPeople(); renderTranscript(); return;
   }
   const p = S.people.get(conn.peer); if (!p) return;
-  if (d.t === "utt") { const text = String(d.text||"").slice(0, 4000).trim(); if (text) ingest({pid:p.pid, text, t: Math.min(Date.now(), +d.t || Date.now()), end:+d.end || Date.now(), level:+d.level || 0}); }
+  if (d.t === "utt") {
+    const text = String(d.text||"").slice(0, 4000).trim(); if (!text) return;
+    /* La hora se calcula con el reloj de la secretaría: el móvil solo informa de cuánto duró
+       la frase y de hace cuánto terminó, así un reloj desajustado no desordena el acta. */
+    const dur = Math.max(0, Math.min(120000, +d.dur || 0)), ago = Math.max(0, Math.min(600000, +d.ago || 0));
+    const end = Date.now() - ago;
+    ingest({pid:p.pid, text, t:end - dur, end, level:+d.level || 0});
+  }
   else if (d.t === "level") { p.level = Math.max(0, Math.min(1, +d.v || 0)); }
   else if (d.t === "mic") { p.mic = String(d.v); p.local = d.local || p.local; renderPeople(); }
   else if (d.t === "hand") { p.hand = !!d.v; p.handAt = Date.now(); renderHands(); if (p.hand) toast(`${p.name} pide la palabra`); }
@@ -985,7 +992,17 @@ function viewParticipant() {
   try { navigator.wakeLock && navigator.wakeLock.request("screen").then(w => wakeLock = w).catch(() => {}); } catch {}
   setupParticipant();
 }
-function send(o) { if (hostConn && hostConn.open) try { hostConn.send(o); } catch {} }
+function send(o) { if (hostConn && hostConn.open) { try { hostConn.send(o); return true; } catch {} } return false; }
+/* Frases pendientes: si la conexión falla un instante, se guardan en memoria y se reenvían al reconectar. */
+const outbox = [];
+function sendUtt(text, t, end, level) { outbox.push({text, t, end, level}); flushOutbox(); }
+function flushOutbox() {
+  while (outbox.length) {
+    const u = outbox[0];
+    if (!send({t:"utt", text:u.text, dur:u.end - u.t, ago:Date.now() - u.end, level:u.level})) return;
+    outbox.shift();
+  }
+}
 async function setupParticipant() {
   const sup = await speechSupport();
   if (sup.local === "downloadable" && typeof SR.install === "function") {
@@ -995,7 +1012,7 @@ async function setupParticipant() {
   S.me.local = sup.local; $("#pSup").innerHTML = privBadge(sup.ok ? sup.local : "none");
   try {
     mic = new Mic({ local: sup.local === "available",
-      onFinal: (text, t, end, level) => { if (!canSpeak()) return; send({t:"utt", text, t, end, level}); S.me.mine.push({text, t}); drawMine(); },
+      onFinal: (text, t, end, level) => { if (!canSpeak()) return; sendUtt(text, t, end, level); S.me.mine.push({text, t}); drawMine(); },
       onInterim: () => {}, onLevel: l => { S.me.level = l; const h = $("#halo"); if (h) { h.style.opacity = mic && mic.on ? Math.min(1, l*1.6) : 0; h.style.transform = `scale(${1 + l*0.25})`; } },
       onState: s => { send({t:"mic", v:s, local:S.me.local}); drawPState(); } });
     await mic.open();
@@ -1009,7 +1026,7 @@ function connectToHost() {
   peer = new Peer({debug:0});
   peer.on("open", () => {
     hostConn = peer.connect(PEER_PREFIX + S.code.toLowerCase(), {reliable:true});
-    hostConn.on("open", () => send({t:"hello", name:S.me.name, role:S.me.role, local:S.me.local, consentAt:S.me.consentAt}));
+    hostConn.on("open", () => { send({t:"hello", name:S.me.name, role:S.me.role, local:S.me.local, consentAt:S.me.consentAt}); flushOutbox(); });
     hostConn.on("data", d => {
       if (!d || typeof d !== "object") return;
       if (d.t === "state") { S.me.state = d; applyPState(); }
