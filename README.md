@@ -17,7 +17,8 @@ Desarrollada para el **Centro Universitario Sagrada Familia (Úbeda)**, aplicabl
 - Fusión de ecos: si dos micrófonos captan la misma frase, se conserva la del que la oyó más fuerte.
 - Sala de espera: la secretaría admite a cada persona antes de que su voz cuente.
 - Turno de palabra: los asistentes piden la palabra desde su dispositivo.
-- Marcas de **acuerdo** y **tarea**, registro de **votaciones** y **notas de secretaría**.
+- **Votación en directo** desde cada dispositivo, pública o secreta. Cada asistente vota en su pantalla (a favor, en contra o abstención) y puede cambiar su voto hasta el cierre; la secretaría ve la participación y, al cerrar, el recuento queda registrado en la transcripción. En la votación secreta solo se conserva el recuento.
+- Marcas de **acuerdo** y **tarea**, registro manual de votaciones y **notas de secretaría**.
 - Tramos **fuera de acta**: apagan todos los micrófonos.
 - Corrección del texto y reasignación de quién dijo cada frase.
 - Modo de **un solo dispositivo**, indicando a mano quién tiene la palabra.

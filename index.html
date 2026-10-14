@@ -242,6 +242,69 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--brand);b
 .proj .code{color:#fff;font-size:clamp(34px,6vw,64px)}
 .proj img{height:64px}
 
+/* votación: panel de la secretaría */
+.vpanel{position:fixed;z-index:40;right:max(16px,env(safe-area-inset-right,0px));bottom:96px;width:min(400px,calc(100% - 32px));max-height:calc(100vh - 200px);overflow:auto;box-shadow:var(--shadow);border-top:4px solid var(--brand)}
+.vpanel .vp-b{padding:16px 18px;display:flex;flex-direction:column;gap:14px}
+.vp-s{font-family:var(--f-doc);font-weight:500;font-size:20px;line-height:1.25}
+.vprog{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center}
+.vprog .tr{height:8px;border-radius:4px;background:var(--surface-2);overflow:hidden}
+.vprog .tr i{display:block;height:100%;background:var(--brand);transition:width .3s}
+.vwho{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;font-size:13px}
+.vwho li{display:flex;align-items:center;gap:6px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vwho li.done{color:var(--fg)} .vwho li.wait{color:var(--muted)}
+.vmini{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.vmini button{border:1px solid var(--line-strong);background:var(--surface);border-radius:6px;padding:8px 4px;font-size:13px;font-weight:500;cursor:pointer}
+.vmini button[aria-pressed=true].yes{background:var(--ok);border-color:var(--ok);color:#fff}
+.vmini button[aria-pressed=true].no{background:var(--rec);border-color:var(--rec);color:#fff}
+.vmini button[aria-pressed=true].abs{background:var(--muted);border-color:var(--muted);color:var(--surface)}
+.vres{display:flex;flex-direction:column;gap:10px}
+.vres-h{font-size:20px;font-weight:600;display:flex;align-items:center;gap:10px}
+.vres-h.ok{color:var(--ok)} .vres-h.ko{color:var(--rec)} .vres-h.tie{color:var(--warn)}
+.vbar{display:grid;grid-template-columns:92px 1fr 34px;gap:10px;align-items:center;font-size:14px}
+.vbar .tr{height:14px;border-radius:4px;background:var(--surface-2);overflow:hidden}
+.vbar .tr i{display:block;height:100%;border-radius:4px;transition:width .5s ease-out}
+.vbar .tr i.yes{background:var(--ok)} .vbar .tr i.no{background:var(--rec)} .vbar .tr i.abs{background:var(--muted)}
+.vbar .n{font-family:var(--f-mono);font-size:14px;text-align:right;font-weight:500}
+.vdetail{font-size:13px;color:var(--muted);line-height:1.5}
+.vdetail b{color:var(--fg);font-weight:500}
+.vcard{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.vcard label{display:flex;flex-direction:column;gap:4px;padding:12px;border:1.5px solid var(--line-strong);border-radius:8px;cursor:pointer;font-size:13px;color:var(--muted)}
+.vcard label b{font-size:14.5px;color:var(--fg)}
+.vcard input{position:absolute;opacity:0;pointer-events:none}
+.vcard label:has(input:checked){border-color:var(--brand);background:var(--brand-tint)}
+@media (max-width:520px){.vcard{grid-template-columns:1fr}}
+
+/* votación: pantalla del asistente */
+.vov{position:fixed;inset:0;z-index:55;background:var(--bg);overflow-y:auto;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));animation:vrise .25s ease-out}
+.vov::before{content:"";position:fixed;top:0;left:0;right:0;height:6px;background:var(--band)}
+@keyframes vrise{from{transform:translateY(14px)}to{transform:none}}
+.vov-in{max-width:520px;margin:0 auto;padding-block:30px 40px;display:flex;flex-direction:column;gap:20px}
+.vov-top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.vov-q{font-family:var(--f-doc);font-weight:500;font-size:clamp(25px,6.4vw,32px);line-height:1.18;text-wrap:balance}
+.vopts{display:flex;flex-direction:column;gap:12px}
+.vopt{display:grid;grid-template-columns:58px minmax(0,1fr) 26px;align-items:center;gap:16px;padding:14px 16px;border:2px solid var(--line);border-radius:14px;background:var(--surface);cursor:pointer;text-align:left;transition:border-color .15s,background .15s,transform .1s;-webkit-tap-highlight-color:transparent}
+.vopt:active{transform:scale(.985)}
+.vopt .ic{width:58px;height:58px;border-radius:50%;display:grid;place-items:center;transition:background .15s,color .15s}
+.vopt .ic svg{width:28px;height:28px}
+.vopt b{display:block;font-size:20px;font-weight:600;line-height:1.2}
+.vopt span.d{font-size:13px;color:var(--muted)}
+.vopt .tick{width:26px;height:26px;border-radius:50%;border:2px solid var(--line-strong);display:grid;place-items:center;color:#fff}
+.vopt .tick svg{width:16px;height:16px;opacity:0}
+.vopt.yes .ic{background:var(--ok-soft);color:var(--ok)}
+.vopt.no .ic{background:var(--rec-soft);color:var(--rec)}
+.vopt.abs .ic{background:var(--surface-2);color:var(--muted)}
+.vopt.yes[aria-pressed=true]{border-color:var(--ok);background:var(--ok-soft)}
+.vopt.no[aria-pressed=true]{border-color:var(--rec);background:var(--rec-soft)}
+.vopt.abs[aria-pressed=true]{border-color:var(--muted);background:var(--surface-2)}
+.vopt.yes[aria-pressed=true] .ic,.vopt.yes[aria-pressed=true] .tick{background:var(--ok);border-color:var(--ok);color:#fff}
+.vopt.no[aria-pressed=true] .ic,.vopt.no[aria-pressed=true] .tick{background:var(--rec);border-color:var(--rec);color:#fff}
+.vopt.abs[aria-pressed=true] .ic,.vopt.abs[aria-pressed=true] .tick{background:var(--muted);border-color:var(--muted);color:var(--surface)}
+.vopt[aria-pressed=true] .tick svg{opacity:1}
+.vopts.voted .vopt[aria-pressed=false]{opacity:.62}
+.vsent{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:10px;background:var(--brand-tint);border:1px solid var(--line);font-size:14px}
+.vsent svg{width:20px;height:20px;color:var(--ok);flex:none}
+.vpriv{display:flex;gap:10px;font-size:13px;color:var(--muted);line-height:1.45}
+.vpriv svg{width:18px;height:18px;flex:none;margin-top:1px}
 .toast{position:fixed;left:50%;top:calc(76px + env(safe-area-inset-top,0px));transform:translateX(-50%);background:var(--brand-ink);color:var(--bg);padding:10px 16px;border-radius:6px;font-size:14px;z-index:70;box-shadow:var(--shadow);max-width:calc(100% - 32px)}
 .foot{padding-block:24px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted)}
 .foot .wrap{display:flex;gap:16px;justify-content:space-between;flex-wrap:wrap}
@@ -301,6 +364,9 @@ const I = {
   doc:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 3h8l5 5v13H6z"/><path d="M14 3v5h5M9 13h7M9 17h7"/></svg>',
   wave:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12h2M7 8v8M11 5v14M15 9v6M19 7v10M21 12h0"/></svg>',
   screen:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="12" rx="1"/><path d="M8 20h8M12 16v4"/></svg>',
+  cross:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg>',
+  minus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 12h12"/></svg>',
+  ballot:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 13h16v7H4zM8 13V4h8v9"/><path d="M10 8l1.5 1.5L14 7"/></svg>',
   spark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M6 18l2.5-2.5M15.5 8.5L18 6"/></svg>',
 };
 
@@ -317,6 +383,7 @@ function freshState() {
     rec: false, off: false, offStart: null, startedAt: null, endedAt: null, recMs: 0, recSince: null,
     dupes: 0, speaker: null, filter: "", tab: "people", ai: {text:"", busy:false, mode:"nominal"},
     apiKey: "", aiModel: "claude-sonnet-5-5",
+    vote: null,            // votación en curso {id, subject, secret, open, ballots:Map, item, final}
   };
 }
 S = freshState();
@@ -470,7 +537,7 @@ function ingest(u) {
 function sysLine(text) { S.utts.push({id:uid(), kind:"system", text, t:Date.now(), item:S.curItem, tags:[]}); }
 
 /* -------------------- Navegación -------------------- */
-function go(view, ...args) { window.scrollTo(0,0); VIEWS[view](...args); }
+function go(view, ...args) { document.querySelectorAll(".vpanel,.vov").forEach(e => e.remove()); window.scrollTo(0,0); VIEWS[view](...args); }
 const VIEWS = { home: viewHome, create: viewCreate, join: viewJoin, host: viewHost, participant: viewParticipant };
 
 /* -------------------- Vista: inicio -------------------- */
@@ -507,7 +574,7 @@ function viewHome() {
       <button class="btn sm" style="margin-top:16px" id="aPriv" type="button">Leer todas las garantías</button>
     </aside>
   </div></section>
-  <footer class="foot gut"><div class="wrap"><span>Centro Universitario Sagrada Familia · Úbeda</span><span>Libres para servir</span></div></footer>`;
+  <footer class="foot gut"><div class="wrap"><span>Centro Universitario Sagrada Familia · Úbeda</span></div></footer>`;
   $("#aCreate").onclick = () => go("create");
   $("#aJoin").onclick = () => go("join");
   $("#aDemo").onclick = startDemo;
@@ -738,7 +805,7 @@ function renderTranscript() {
     if (u.kind === "system") { html += `<div class="u sys"><span class="t">${hhmm(u.t)}</span><div class="txt">${esc(u.text)}</div></div>`; continue; }
     const p = S.people.get(u.pid); const col = p ? p.color : "var(--muted)";
     if (u.kind === "vote") {
-      const v = u.vote; html += `<div class="u vote" data-id="${u.id}"><span class="t">${hhmm(u.t)}</span><div><div class="who"><span class="tag acuerdo">Votación</span></div><div class="box"><div class="txt" style="margin:0">${esc(v.subject)}</div><div class="small muted mono" style="margin-top:4px">A favor ${v.yes} · En contra ${v.no} · Abstenciones ${v.abs} → <b style="color:var(--fg)">${esc(v.result)}</b></div></div></div><div class="ops"><button data-op="del" aria-label="Eliminar">${I.trash}</button></div></div>`; continue;
+      const v = u.vote; html += `<div class="u vote" data-id="${u.id}"><span class="t">${hhmm(u.t)}</span><div style="min-width:0"><div class="who"><span class="tag acuerdo">Votación</span>${v.mode === "live" ? `<span class="pill">${v.secret ? "Secreta" : "Pública"} · en los dispositivos</span>` : ""}</div><div class="box"><div class="txt" style="margin:0">${esc(v.subject)}</div><div class="small muted mono" style="margin-top:4px">A favor ${v.yes} · En contra ${v.no} · Abstenciones ${v.abs}${v.mode === "live" ? ` · votaron ${v.cast} de ${v.eligible}` : ""} → <b style="color:var(--fg)">${esc(v.result)}</b></div>${voterDetailHTML(v)}</div></div><div class="ops"><button data-op="del" aria-label="Eliminar">${I.trash}</button></div></div>`; continue;
     }
     const tags = (u.tags||[]).map(t => `<span class="tag ${t}">${t === "acuerdo" ? "Acuerdo" : "Tarea"}</span>`).join("");
     html += `<div class="u ${u.kind === "note" ? "note" : ""}" data-id="${u.id}"><span class="t">${hhmmss(u.t)}</span><div style="min-width:0"><div class="who"><span class="sw" style="background:${col}"></span>${esc(u.kind === "note" ? "Nota de secretaría" : u.name)}${tags}${u.merged ? `<span class="tag merged" title="Otros micrófonos captaron esta frase; se ha conservado una sola vez">eco fusionado</span>` : ""}</div><div class="txt">${hl(u.text)}</div></div>
@@ -830,18 +897,133 @@ function addNote() {
   modal("Nota de secretaría", `<label class="f">Texto que quedará en la transcripción<textarea id="nt" placeholder="Ej.: Se incorpora a la sesión la directora del departamento."></textarea></label>`,
     [{label:"Cancelar"},{label:"Añadir nota", cls:"pri", act: m => { const t = $("#nt", m).value.trim(); if (!t) return true; S.utts.push({id:uid(), pid:"host", name:"Nota de secretaría", kind:"note", text:t, t:Date.now(), item:S.curItem, tags:[]}); renderTranscript(); }}]);
 }
+const CHOICES = { yes:{label:"A favor", icon:"check"}, no:{label:"En contra", icon:"cross"}, abs:{label:"Abstención", icon:"minus"} };
+function eligibleVoters() { return [...S.people.values()].filter(p => p.admitted && !p.leftAt); }
+function voteTally(v) { const t = {yes:0, no:0, abs:0}; v.ballots.forEach((c, pid) => { const p = S.people.get(pid); if (p && p.admitted && !p.leftAt && t[c] !== undefined) t[c]++; }); return t; }
+function voteResult(t, eligible) {
+  const cast = t.yes + t.no + t.abs;
+  if (!cast) return "Sin votos emitidos";
+  if (t.yes === cast && cast === eligible) return "Aprobado por unanimidad";
+  if (t.yes > t.no) return "Aprobado por mayoría simple";
+  if (t.yes === t.no) return "Empate";
+  return "No aprobado";
+}
+function resultTone(r) { return /^Aprobado/.test(r) ? "ok" : r === "Empate" || r === "Sin votos emitidos" ? "tie" : "ko"; }
+function votersByChoice(v) { const g = {yes:[], no:[], abs:[]}; (v.voters || []).forEach(x => g[x.choice] && g[x.choice].push(x.name)); return g; }
+function voterDetailHTML(v) {
+  if (v.mode !== "live" || v.secret || !(v.voters || []).length) return "";
+  const g = votersByChoice(v);
+  return `<div class="vdetail" style="margin-top:6px">${["yes","no","abs"].filter(k => g[k].length).map(k => `<b>${CHOICES[k].label}:</b> ${g[k].map(esc).join(", ")}`).join("<br>")}</div>`;
+}
+function voterDetailText(v) {
+  if (v.mode !== "live" || v.secret || !(v.voters || []).length) return v.mode === "live" && v.secret ? " Votación secreta." : "";
+  const g = votersByChoice(v), lab = {yes:"a favor", no:"en contra", abs:"se abstienen"};
+  return " " + ["yes","no","abs"].filter(k => g[k].length).map(k => `Votan ${lab[k]}: ${g[k].join(", ")}.`).join(" ").replace("Votan se abstienen", "Se abstienen");
+}
+
 function addVote() {
-  modal("Registrar votación", `<div class="stack"><label class="f">Asunto que se vota<input type="text" id="vS" placeholder="Aprobación del calendario de pruebas"></label>
-    <div class="grid2" style="grid-template-columns:repeat(3,1fr)"><label class="f">A favor<input type="number" min="0" id="vY" value="0"></label><label class="f">En contra<input type="number" min="0" id="vN" value="0"></label><label class="f">Abstenciones<input type="number" min="0" id="vA" value="0"></label></div>
-    <label class="check"><input type="checkbox" id="vU"> Aprobado por asentimiento (unanimidad)</label></div>`,
-    [{label:"Cancelar"},{label:"Registrar", cls:"pri", act: m => {
-      const subject = $("#vS", m).value.trim(); if (!subject) { toast("Indica el asunto"); return true; }
-      let yes = +$("#vY", m).value||0, no = +$("#vN", m).value||0, abs = +$("#vA", m).value||0; const un = $("#vU", m).checked;
-      if (un) { yes = [...S.people.values()].filter(p => p.admitted && !p.leftAt).length; no = 0; abs = 0; }
-      const result = un ? "Aprobado por asentimiento" : yes > no ? "Aprobado por mayoría" : yes === no ? "Empate" : "No aprobado";
-      S.utts.push({id:uid(), kind:"vote", pid:"host", name:"Votación", text:subject, vote:{subject, yes, no, abs, result}, t:Date.now(), item:S.curItem, tags:[]});
+  const canLive = S.meeting.captureMode !== "single";
+  const m = modal("Nueva votación", `<div class="stack">
+    <div class="seg" role="group" aria-label="Forma de votar">
+      <button type="button" data-vm="live" aria-pressed="${canLive}" ${canLive ? "" : "disabled"}>Votar en los dispositivos</button>
+      <button type="button" data-vm="manual" aria-pressed="${!canLive}">Anotar el resultado</button>
+    </div>
+    <label class="f">Asunto que se somete a votación<input type="text" id="vS" placeholder="Aprobación del calendario de pruebas del primer cuatrimestre"></label>
+    <div id="vLive" class="stack" ${canLive ? "" : "hidden"}>
+      <div class="vcard" role="radiogroup" aria-label="Tipo de votación">
+        <label><input type="radio" name="vT" value="public" checked><b>Pública</b>El acta recoge qué votó cada persona.</label>
+        <label><input type="radio" name="vT" value="secret"><b>Secreta</b>Solo se conoce el recuento. Nadie ve el voto de nadie.</label>
+      </div>
+      <p class="small muted">Cada asistente admitido verá la votación en su pantalla y podrá cambiar su voto hasta que la cierres. El recuento se muestra al cerrar.</p>
+    </div>
+    <div id="vMan" class="stack" ${canLive ? "hidden" : ""}>
+      <div class="grid2" style="grid-template-columns:repeat(3,1fr)"><label class="f">A favor<input type="number" min="0" id="vY" value="0"></label><label class="f">En contra<input type="number" min="0" id="vN" value="0"></label><label class="f">Abstenciones<input type="number" min="0" id="vA" value="0"></label></div>
+      <label class="check"><input type="checkbox" id="vU"> Aprobado por asentimiento (unanimidad)</label>
+      ${canLive ? "" : `<p class="small muted">En el modo de un solo dispositivo los asistentes no tienen pantalla propia, así que el resultado se anota a mano.</p>`}
+    </div></div>`,
+    [{label:"Cancelar"},{label: canLive ? "Abrir votación" : "Registrar", cls:"pri", act: md => {
+      const subject = $("#vS", md).value.trim(); if (!subject) { toast("Indica el asunto que se vota"); $("#vS", md).focus(); return true; }
+      if (md.dataset.mode !== "manual") { openLiveVote(subject, md.querySelector("input[name=vT]:checked").value === "secret"); return; }
+      let yes = +$("#vY", md).value||0, no = +$("#vN", md).value||0, abs = +$("#vA", md).value||0; const un = $("#vU", md).checked;
+      if (un) { yes = eligibleVoters().length; no = 0; abs = 0; }
+      const result = un ? "Aprobado por asentimiento" : yes > no ? "Aprobado por mayoría simple" : yes === no ? "Empate" : "No aprobado";
+      S.utts.push({id:uid(), kind:"vote", pid:"host", name:"Votación", text:subject, vote:{subject, yes, no, abs, result, mode:"manual"}, t:Date.now(), item:S.curItem, tags:[]});
       renderTranscript(); renderTabs();
     }}]);
+  m.dataset.mode = canLive ? "live" : "manual";
+  const primary = m.querySelector(".mf .pri");
+  m.querySelectorAll("[data-vm]").forEach(b => b.onclick = () => {
+    m.dataset.mode = b.dataset.vm; m.querySelectorAll("[data-vm]").forEach(x => x.setAttribute("aria-pressed", x === b));
+    $("#vLive", m).hidden = b.dataset.vm !== "live"; $("#vMan", m).hidden = b.dataset.vm === "live";
+    primary.textContent = b.dataset.vm === "live" ? "Abrir votación" : "Registrar";
+  });
+}
+function openLiveVote(subject, secret) {
+  if (S.vote && S.vote.open) { toast("Ya hay una votación abierta"); return; }
+  S.vote = {id:uid(), subject, secret, open:true, ballots:new Map(), item:S.curItem, openedAt:Date.now(), final:null};
+  broadcast(); renderVotePanel();
+  if (S.role === "demo") demoBallots();
+}
+function castVote(pid, choice) {
+  const v = S.vote; if (!v || !v.open || !CHOICES[choice]) return;
+  const p = S.people.get(pid); if (!p || !p.admitted || p.leftAt) return;
+  v.ballots.set(pid, choice); broadcast(); renderVotePanel();
+}
+function closeLiveVote() {
+  const v = S.vote; if (!v || !v.open) return;
+  const t = voteTally(v), eligible = eligibleVoters().length, cast = t.yes + t.no + t.abs, result = voteResult(t, eligible);
+  const voters = v.secret ? null : [...v.ballots].map(([pid, c]) => ({name:(S.people.get(pid) || {}).name || "Asistente", choice:c}));
+  S.utts.push({id:uid(), kind:"vote", pid:"host", name:"Votación", text:v.subject, t:Date.now(), item:v.item, tags:[],
+    vote:{subject:v.subject, yes:t.yes, no:t.no, abs:t.abs, result, mode:"live", secret:v.secret, eligible, cast, voters}});
+  v.open = false; v.final = {...t, result, cast, eligible};
+  if (v.secret) v.ballots.clear();   // en votación secreta se descarta quién votó qué
+  broadcast(); renderVotePanel(); renderTranscript(); renderTabs();
+}
+function cancelLiveVote() {
+  if (!S.vote) return;
+  if (S.vote.open) sysLine(`Se anula la votación sobre «${S.vote.subject}» antes de su cierre.`);
+  S.vote = null; broadcast(); renderVotePanel(); renderTranscript();
+}
+function dismissVote() { S.vote = null; broadcast(); renderVotePanel(); }
+function resultBarsHTML(f) {
+  const max = Math.max(1, f.yes, f.no, f.abs);
+  return ["yes","no","abs"].map(k => `<div class="vbar"><span>${CHOICES[k].label}</span><span class="tr"><i class="${k}" style="width:${(f[k]/max*100).toFixed(0)}%"></i></span><span class="n">${f[k]}</span></div>`).join("");
+}
+function renderVotePanel() {
+  let el = $("#vpanel");
+  const v = S.vote;
+  if (!v || !["host","demo"].includes(S.role)) { if (el) el.remove(); return; }
+  if (!el) { el = document.createElement("section"); el.id = "vpanel"; el.className = "card vpanel"; el.setAttribute("aria-live","polite"); document.body.appendChild(el); }
+  const dock = $(".dock"); if (dock) el.style.bottom = (dock.offsetHeight + 12) + "px";
+  const el2 = eligibleVoters(), cast = v.open ? [...v.ballots.keys()].filter(pid => el2.some(p => p.pid === pid)).length : v.final.cast;
+  const total = v.open ? el2.length : v.final.eligible;
+  if (v.open) {
+    const mine = v.ballots.get("host");
+    el.innerHTML = `<div class="sec-h"><h3>Votación en curso · ${v.secret ? "secreta" : "pública"}</h3><button class="btn ghost sm" id="vCancel" type="button">Anular</button></div>
+      <div class="vp-b">
+        <p class="vp-s">${esc(v.subject)}</p>
+        <div class="vprog"><span class="tr"><i style="width:${total ? cast/total*100 : 0}%"></i></span><span class="mono small">${cast} de ${total} han votado</span></div>
+        ${v.secret ? `<p class="small muted">Votación secreta: solo se ve cuántas personas han votado. El recuento aparece al cerrar.</p>`
+          : `<ul class="vwho">${el2.map(p => `<li class="${v.ballots.has(p.pid) ? "done" : "wait"}">${v.ballots.has(p.pid) ? I.check.replace("<svg",'<svg style="width:14px;height:14px;color:var(--ok)"') : '<span style="width:14px;display:inline-block;text-align:center">·</span>'}${esc(p.name)}</li>`).join("")}</ul><p class="small muted">El sentido de cada voto se muestra al cerrar.</p>`}
+        <div><div class="small muted" style="margin-bottom:6px">Tu voto</div><div class="vmini">${["yes","no","abs"].map(k => `<button type="button" class="${k}" data-hv="${k}" aria-pressed="${mine === k}">${CHOICES[k].label}</button>`).join("")}</div></div>
+        <button class="btn pri" id="vClose" type="button">Cerrar votación y ver resultado</button>
+      </div>`;
+    el.querySelectorAll("[data-hv]").forEach(b => b.onclick = () => castVote("host", b.dataset.hv));
+    $("#vClose").onclick = closeLiveVote;
+    $("#vCancel").onclick = cancelLiveVote;
+  } else {
+    const f = v.final, tone = resultTone(f.result);
+    const last = [...S.utts].reverse().find(u => u.kind === "vote");
+    el.innerHTML = `<div class="sec-h"><h3>Resultado de la votación</h3><button class="btn ghost sm" id="vDismiss" type="button" aria-label="Cerrar">✕</button></div>
+      <div class="vp-b">
+        <p class="vp-s">${esc(v.subject)}</p>
+        <div class="vres"><div class="vres-h ${tone}">${tone === "ok" ? I.check.replace("<svg",'<svg style="width:24px;height:24px"') : tone === "ko" ? I.cross.replace("<svg",'<svg style="width:24px;height:24px"') : ""}${esc(f.result)}</div>${resultBarsHTML(f)}<span class="small muted mono">Votaron ${f.cast} de ${f.eligible}${v.secret ? " · votación secreta" : ""}</span></div>
+        ${last ? voterDetailHTML(last.vote) : ""}
+        <p class="small" style="color:var(--ok)">Registrada en la transcripción y en Acuerdos.</p>
+        <button class="btn" id="vDone" type="button">Cerrar</button>
+      </div>`;
+    $("#vDismiss").onclick = dismissVote; $("#vDone").onclick = dismissVote;
+  }
 }
 function giveFloor(pid) {
   const p = S.people.get(pid); if (!p) return; p.hand = false;
@@ -924,9 +1106,19 @@ function onHostData(conn, d) {
   }
   else if (d.t === "level") { p.level = Math.max(0, Math.min(1, +d.v || 0)); }
   else if (d.t === "mic") { p.mic = String(d.v); p.local = d.local || p.local; renderPeople(); }
+  else if (d.t === "ballot") { if (S.vote && S.vote.open && d.id === S.vote.id) castVote(p.pid, String(d.c)); }
   else if (d.t === "hand") { p.hand = !!d.v; p.handAt = Date.now(); renderHands(); if (p.hand) toast(`${p.name} pide la palabra`); }
 }
-function stateFor(p) { return {t:"state", admitted:!!p.admitted, rec:S.rec, off:S.off, strict:S.meeting.strict, item:S.curItem, itemTitle:S.meeting.items[S.curItem], body:S.meeting.body, title:S.meeting.title, mode:S.meeting.captureMode}; }
+function stateFor(p) { return {t:"state", admitted:!!p.admitted, rec:S.rec, off:S.off, strict:S.meeting.strict, item:S.curItem, itemTitle:S.meeting.items[S.curItem], body:S.meeting.body, title:S.meeting.title, mode:S.meeting.captureMode, vote:voteFor(p)}; }
+function voteFor(p) {
+  const v = S.vote; if (!v || !p.admitted) return null;
+  const elig = eligibleVoters();
+  return {id:v.id, subject:v.subject, secret:v.secret, open:v.open, item:v.item+1,
+    cast: v.open ? [...v.ballots.keys()].filter(pid => elig.some(x => x.pid === pid)).length : v.final.cast,
+    eligible: v.open ? elig.length : v.final.eligible,
+    mine: v.open ? (v.ballots.get(p.pid) || null) : null,
+    final: v.open ? null : v.final};
+}
 function sendState(p) { if (p.conn && p.conn.open) try { p.conn.send(stateFor(p)); } catch {} }
 function broadcast() { S.people.forEach(p => sendState(p)); }
 
@@ -1043,7 +1235,38 @@ function applyPState() {
   $("#pBody").textContent = st.body; $("#pItem").textContent = st.admitted ? `Punto ${st.item+1}: ${st.itemTitle}` : "";
   const should = canSpeak();
   if (mic) { if (should && !mic.on) mic.start(); else if (!should && mic.on) mic.stop(); }
-  drawPState();
+  drawPState(); renderVoteP();
+}
+function renderVoteP() {
+  const st = S.me && S.me.state, v = st && st.vote;
+  let el = $("#vov");
+  if (!v || S.me.dismissed === v.id + (v.open ? "o" : "c")) { if (el) el.remove(); return; }
+  if (v.open && S.me.choiceFor !== v.id) { S.me.choiceFor = v.id; S.me.choice = v.mine; }
+  if (v.open && v.mine) S.me.choice = v.mine;
+  const mine = S.me.choiceFor === v.id ? S.me.choice : null;
+  if (!el) { el = document.createElement("div"); el.id = "vov"; el.className = "vov"; el.setAttribute("role","dialog"); el.setAttribute("aria-modal","true"); el.setAttribute("aria-label","Votación"); document.body.appendChild(el); }
+  const top = `<div class="vov-top"><span class="eyebrow">${I.ballot.replace("<svg",'<svg style="width:15px;height:15px;vertical-align:-2px;margin-right:4px"')}Votación · Punto ${v.item}</span><span class="pill ${v.secret ? "brand" : ""}">${v.secret ? "Secreta" : "Pública"}</span></div>`;
+  if (v.open) {
+    const sub = {yes:"Apoyo la propuesta", no:"No apoyo la propuesta", abs:"No me pronuncio"};
+    el.innerHTML = `<div class="vov-in">${top}<h2 class="vov-q">${esc(v.subject)}</h2>
+      <div class="vopts${mine ? " voted" : ""}" role="radiogroup" aria-label="Tu voto">${["yes","no","abs"].map(k => `<button type="button" role="radio" class="vopt ${k}" data-c="${k}" aria-pressed="${mine === k}" aria-checked="${mine === k}"><span class="ic">${I[CHOICES[k].icon]}</span><span><b>${CHOICES[k].label}</b><span class="d">${sub[k]}</span></span><span class="tick">${I.check}</span></button>`).join("")}</div>
+      ${mine ? `<div class="vsent">${I.check}<span><b>Voto enviado: ${CHOICES[mine].label}.</b> Puedes cambiarlo hasta que se cierre la votación.</span></div>` : ""}
+      <div class="vprog"><span class="tr"><i style="width:${v.eligible ? v.cast/v.eligible*100 : 0}%"></i></span><span class="mono small muted">${v.cast} de ${v.eligible} han votado</span></div>
+      <p class="vpriv">${I.shield}<span>${v.secret ? "Votación secreta. El acta solo recogerá el recuento. Tu voto llega al dispositivo de la secretaría únicamente para contarlo y se descarta al cerrar." : "Votación pública. El acta recogerá el sentido del voto de cada persona."}</span></p></div>`;
+    el.querySelectorAll("[data-c]").forEach(b => b.onclick = () => {
+      S.me.choice = b.dataset.c; S.me.choiceFor = v.id;
+      send({t:"ballot", id:v.id, c:b.dataset.c});
+      try { navigator.vibrate && navigator.vibrate(25); } catch {}
+      renderVoteP();
+    });
+  } else {
+    const f = v.final, tone = resultTone(f.result);
+    el.innerHTML = `<div class="vov-in">${top}<h2 class="vov-q">${esc(v.subject)}</h2>
+      <div class="card pad vres"><div class="vres-h ${tone}">${tone === "ok" ? I.check.replace("<svg",'<svg style="width:26px;height:26px"') : tone === "ko" ? I.cross.replace("<svg",'<svg style="width:26px;height:26px"') : ""}${esc(f.result)}</div>${resultBarsHTML(f)}<span class="small muted mono">Votaron ${f.cast} de ${f.eligible}</span></div>
+      ${mine ? `<div class="vsent">${I.check}<span>Tu voto: <b>${CHOICES[mine].label}</b></span></div>` : `<p class="small muted">No llegaste a votar.</p>`}
+      <button class="btn pri lg" id="vBack" type="button">Volver a la reunión</button></div>`;
+    $("#vBack").onclick = () => { S.me.dismissed = v.id + "c"; renderVoteP(); };
+  }
 }
 function drawPState() {
   const st = S.me.state, msg = $("#pMsg"), ring = $("#ring"), ps = $("#pState"); if (!msg) return;
@@ -1056,7 +1279,7 @@ function drawPState() {
   ps.innerHTML = `<span class="pill rec"><span class="dot live"></span>Transcribiendo</span>`; msg.textContent = on ? "Tu micrófono está activo. Habla con normalidad." : "Activando el micrófono…";
 }
 function drawMine() { const el = $("#mine"); if (!el) return; el.innerHTML = S.me.mine.slice(-30).map(m => `<div><span class="mono small muted">${hhmm(m.t)}</span> ${esc(m.text)}</div>`).join(""); el.scrollTop = el.scrollHeight; }
-function cleanupParticipant() { if (mic) { mic.close(); mic = null; } try { hostConn && hostConn.close(); } catch {} try { peer && peer.destroy(); } catch {} hostConn = null; peer = null; try { wakeLock && wakeLock.release(); } catch {} }
+function cleanupParticipant() { const vo = $("#vov"); if (vo) vo.remove(); if (mic) { mic.close(); mic = null; } try { hostConn && hostConn.close(); } catch {} try { peer && peer.destroy(); } catch {} hostConn = null; peer = null; try { wakeLock && wakeLock.release(); } catch {} }
 function leaveParticipant() { cleanupParticipant(); S = freshState(); endScreen("Has salido de la reunión. No queda nada guardado en este dispositivo."); }
 function endScreen(text) {
   $("#app").innerHTML = `<section class="pp gut"><div class="card pad stack" style="align-items:center;text-align:center;padding:40px 20px">${I.shield.replace("<svg",'<svg style="width:40px;height:40px;color:var(--ok)"')}<h2>${esc(text)}</h2><button class="btn pri" id="home" type="button">Volver al inicio</button></div></section>`;
@@ -1080,7 +1303,7 @@ function transcriptText({anon=false, times=true} = {}) {
     if (u.item !== last) { last = u.item; out.push(`\n## Punto ${u.item+1}. ${S.meeting.items[u.item]}`); }
     const tm = times ? `[${hhmm(u.t)}] ` : "";
     if (u.kind === "system") out.push(`${tm}(${anon ? scrubNames(u.text, map) : u.text})`);
-    else if (u.kind === "vote") out.push(`${tm}VOTACIÓN — ${u.vote.subject}: a favor ${u.vote.yes}, en contra ${u.vote.no}, abstenciones ${u.vote.abs}. Resultado: ${u.vote.result}.`);
+    else if (u.kind === "vote") out.push(`${tm}VOTACIÓN${u.vote.mode === "live" ? (u.vote.secret ? " SECRETA" : " PÚBLICA") : ""} — ${u.vote.subject}: a favor ${u.vote.yes}, en contra ${u.vote.no}, abstenciones ${u.vote.abs}${u.vote.mode === "live" ? ` (votaron ${u.vote.cast} de ${u.vote.eligible})` : ""}. Resultado: ${u.vote.result}.${anon ? "" : voterDetailText(u.vote)}`);
     else if (u.kind === "note") out.push(`${tm}NOTA DE SECRETARÍA: ${anon ? scrubNames(u.text, map) : u.text}`);
     else { const who = anon ? map.get(u.pid) : u.name; const tg = (u.tags||[]).length ? ` [${u.tags.map(t => t.toUpperCase()).join(", ")}]` : ""; out.push(`${tm}${who}${tg}: ${anon ? scrubNames(u.text, map) : u.text}`); }
   });
@@ -1136,7 +1359,7 @@ async function exportDocx({kind, anon=false, times=true, body=""}) {
       const tm = times ? new TextRun({text:`${hhmm(u.t)}  `, color:"7A8C99", size:18, font:"Consolas"}) : null;
       const runs = []; if (tm) runs.push(tm);
       if (u.kind === "system") runs.push(new TextRun({text: anon ? scrubNames(u.text, map) : u.text, italics:true, color:"557083", size:20, font:"Calibri"}));
-      else if (u.kind === "vote") runs.push(new TextRun({text:"Votación. ", bold:true, size:22, font:"Calibri"}), new TextRun({text:`${u.vote.subject}: a favor ${u.vote.yes}, en contra ${u.vote.no}, abstenciones ${u.vote.abs}. ${u.vote.result}.`, size:22, font:"Calibri"}));
+      else if (u.kind === "vote") runs.push(new TextRun({text:"Votación. ", bold:true, size:22, font:"Calibri"}), new TextRun({text:`${u.vote.subject}: a favor ${u.vote.yes}, en contra ${u.vote.no}, abstenciones ${u.vote.abs}${u.vote.mode === "live" ? ` (votaron ${u.vote.cast} de ${u.vote.eligible})` : ""}. ${u.vote.result}.${anon ? (u.vote.secret ? " Votación secreta." : "") : voterDetailText(u.vote)}`, size:22, font:"Calibri"}));
       else {
         const who = u.kind === "note" ? "Nota de secretaría" : (anon ? map.get(u.pid) : u.name);
         runs.push(new TextRun({text:`${who}: `, bold:true, size:22, font:"Calibri"}));
@@ -1254,7 +1477,7 @@ function endMeeting() {
     [{label:"Volver a la reunión"},{label:"Descargar transcripción", act: () => { exportDocx({kind:"transcript"}); return true; }},{label:"Finalizar y borrar todo", cls:"rec", act: () => {
       S.people.forEach(p => { try { p.conn && p.conn.send({t:"end"}); } catch {} });
       setTimeout(() => { try { peer && peer.destroy(); } catch {} peer = null; }, 400);
-      if (mic) { mic.close(); mic = null; } clearInterval(clockTimer); demoStop();
+      if (mic) { mic.close(); mic = null; } clearInterval(clockTimer); demoStop(); const vp = $("#vpanel"); if (vp) vp.remove();
       S = freshState(); window.onbeforeunload = null;
       endScreen("Reunión finalizada. Se ha borrado todo el contenido de este dispositivo.");
     }}]);
@@ -1278,7 +1501,7 @@ const DEMO_SCRIPT = [
   ["dup","d2","Yo puedo mover la prueba práctica de educación física a la semana anterior sin problema"],
   ["d3","Entonces quedarían dos pruebas esa semana, que me parece razonable."],
   ["hand","d2"],
-  ["vote","Calendario de pruebas del primer cuatrimestre con el cambio propuesto",5,0,0,"Aprobado por asentimiento"],
+  ["livevote","Aprobación del calendario de pruebas del primer cuatrimestre con el cambio propuesto"],
   ["sys:item",2],
   ["d2","Sobre los trabajos interdisciplinares, propongo que en cuarto se haga un único proyecto entre Matemáticas y Lengua sobre la lectura de datos en la prensa."],
   ["d3","Me parece muy buena idea. Puedo preparar yo una primera rúbrica común antes del treinta de noviembre.", ["tarea"]],
@@ -1307,14 +1530,21 @@ function demoResume() {
   clearInterval(demoTimer); demoTimer = setInterval(demoStep, 2300); demoStep();
 }
 function demoPause() { clearInterval(demoTimer); demoTimer = null; S.people.forEach(p => { if (p.pid !== "host") { p.mic = "off"; p.level = 0; } }); renderPeople(); }
+function demoBallots() {
+  const plan = {d1:"yes", d2:"yes", d3:"yes", d4:"abs"};
+  const vid = S.vote && S.vote.id;
+  Object.keys(plan).forEach((pid, i) => setTimeout(() => { if (S.role === "demo" && S.vote && S.vote.id === vid && S.vote.open) castVote(pid, plan[pid]); }, 900 + i * 850));
+}
 function demoStop() { clearInterval(demoTimer); demoTimer = null; }
 function demoStep() {
   if (!S || S.role !== "demo" || !S.rec || S.off) return;
+  if (S.vote && S.vote.open) return;
   if (demoIdx >= DEMO_SCRIPT.length) { demoPause(); toast("Fin de la demostración. Prueba las pestañas Acta con IA y Exportar.", 5000); return; }
   const st = DEMO_SCRIPT[demoIdx++];
   S.people.forEach(p => p.level = 0);
   if (st[0] === "sys:item") { setItem(st[1]); return demoStep(); }
   if (st[0] === "hand") { const p = S.people.get(st[1]); p.hand = true; p.handAt = Date.now(); renderHands(); return; }
+  if (st[0] === "livevote") { openLiveVote(st[1], false); toast("Votación abierta. Vota desde el panel y ciérrala cuando quieras.", 4500); return; }
   if (st[0] === "vote") { S.utts.push({id:uid(), kind:"vote", pid:"host", name:"Votación", text:st[1], vote:{subject:st[1], yes:st[2], no:st[3], abs:st[4], result:st[5]}, t:Date.now(), item:S.curItem, tags:[]}); renderTranscript(); renderTabs(); return; }
   if (st[0] === "dup") { ingest({pid:st[1], text:st[2], t:Date.now()-1500, level:0.12}); return; }
   const p = S.people.get(st[0]);
