@@ -1,6 +1,24 @@
 <title>Actas CUSAFA</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="description" content="Transcripción colaborativa de reuniones y redacción de actas. Sin almacenamiento.">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#006A9D">
+<meta name="apple-mobile-web-app-title" content="Actas">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="es_ES">
+<meta property="og:site_name" content="Centro Universitario Sagrada Familia">
+<meta property="og:title" content="Actas · Transcripción de reuniones">
+<meta property="og:description" content="Cada intervención, con su nombre y su hora. Votación en directo y acta con IA, sin almacenar datos.">
+<meta property="og:url" content="https://agarcia-poz.github.io/generadordeactas/">
+<meta property="og:image" content="https://agarcia-poz.github.io/generadordeactas/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Actas, del Centro Universitario Sagrada Familia">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://agarcia-poz.github.io/generadordeactas/og-image.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@300;400;500;600;700&family=Spectral:ital,wght@0,400;0,500;0,600;1,400&family=Fira+Mono:wght@400;500&display=swap">
 <style>
@@ -366,7 +384,6 @@ const I = {
   mic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>',
   plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
   join:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3M21 14v7h-4"/></svg>',
-  play:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M10 8.5l5 3.5-5 3.5z" fill="currentColor"/></svg>',
   shield:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3l8 3v6c0 4.5-3.4 8.2-8 9-4.6-.8-8-4.5-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg>',
   alert:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3l9.5 17h-19z"/><path d="M12 10v4M12 17.5v.5"/></svg>',
   edit:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>',
@@ -389,7 +406,7 @@ const I = {
 let S = null;
 function freshState() {
   return {
-    role: null,            // "host" | "participant" | "demo"
+    role: null,            // "host" | "participant"
     meeting: null,         // {title, body, date, time, place, chair, secretary, items[], captureMode, strict}
     code: null,
     utts: [],              // {id, pid, name, text, t, end, item, level, tags[], kind, merged}
@@ -405,7 +422,7 @@ function freshState() {
 }
 S = freshState();
 
-let peer = null, hostConn = null, mic = null, demoTimer = null, clockTimer = null, wakeLock = null, polishTimer = null;
+let peer = null, hostConn = null, mic = null, clockTimer = null, wakeLock = null, polishTimer = null;
 
 /* -------------------- Utilidades UI -------------------- */
 function toast(msg, ms = 2600) {
@@ -478,7 +495,6 @@ function privBadge(local) {
   if (local === "available" || local === "local") return `<span class="pill ok"><span class="dot"></span>Voz procesada en el dispositivo</span>`;
   if (local === "downloadable" || local === "downloading") return `<span class="pill warn"><span class="dot"></span>Modelo local disponible para instalar</span>`;
   if (local === "none") return `<span class="pill rec"><span class="dot"></span>Sin reconocimiento de voz</span>`;
-  if (local === "demo") return `<span class="pill brand"><span class="dot"></span>Simulación</span>`;
   return `<span class="pill warn"><span class="dot"></span>Voz procesada por el servicio del navegador</span>`;
 }
 
@@ -677,11 +693,10 @@ function viewHome() {
       <div class="eyebrow">Secretaría de órganos colegiados</div>
       <h1 style="margin-top:10px">Cada intervención, con su nombre y su hora. El acta, en minutos.</h1>
       <p class="lead">Quien convoca crea la reunión y proyecta un código QR. Cada asistente se une desde su móvil o portátil, y su micrófono transcribe solo su voz. Al terminar, descargas la transcripción en Word o generas el borrador del acta, nominal o anónima.</p>
-      ${IN_CLAUDE ? `<div class="notice info" style="margin-top:20px">Estás viendo la vista previa. Aquí puedes recorrer la demostración, probar la redacción del acta con IA y descargar el Word de ejemplo. Para usar micrófonos y conectar dispositivos, la app debe abrirse desde la dirección web del centro.</div>` : ""}
+      ${IN_CLAUDE ? `<div class="notice info" style="margin-top:20px">Estás viendo la vista previa. Para usar micrófonos y conectar dispositivos, la app debe abrirse desde su dirección web.</div>` : ""}
       <div class="actions">
         <button class="action main" id="aCreate" type="button">${I.plus}<b>Crear reunión</b><span class="muted small">Preparar el orden del día y abrir la sala</span></button>
         <button class="action" id="aJoin" type="button">${I.join}<b>Unirme a una reunión</b><span class="muted small">Con el código de seis caracteres</span></button>
-        <button class="action" id="aDemo" type="button">${I.play}<b>Ver demostración</b><span class="muted small">Una comisión simulada de 4 personas</span></button>
       </div>
       <div class="flow">
         <div><span class="n">1</span><b>Convocar</b><p>Orden del día, órgano y lugar.</p></div>
@@ -705,7 +720,6 @@ function viewHome() {
   <footer class="foot gut"><div class="wrap"><span>Centro Universitario Sagrada Familia · Úbeda</span></div></footer>`;
   $("#aCreate").onclick = () => go("create");
   $("#aJoin").onclick = () => go("join");
-  $("#aDemo").onclick = startDemo;
   $("#aPriv").onclick = showPrivacy;
 }
 
@@ -809,7 +823,7 @@ function viewHost() {
   <div class="room-head gut"><div class="wrap">
     <div style="min-width:0;flex:1">
       <div class="eyebrow">${esc(S.meeting.body)}</div>
-      <h2>${esc(S.meeting.title)}${S.role === "demo" ? ' <span class="pill brand" style="vertical-align:middle">Demostración · datos de ejemplo</span>' : ""}</h2>
+      <h2>${esc(S.meeting.title)}</h2>
     </div>
     <div class="row">
       <span id="recState"></span>
@@ -872,14 +886,13 @@ function viewHost() {
   $("#polBtn").onclick = openPolish;
   document.querySelectorAll("[data-view]").forEach(b => b.onclick = () => { S.view = b.dataset.view; document.querySelectorAll("[data-view]").forEach(x => x.setAttribute("aria-pressed", x === b)); renderTranscript(); });
   const tb = $("#talkBtn"); tb.hidden = !(S.meeting.captureMode === "ptt" && S.meeting.myMic && S.role === "host"); tb.onclick = toggleHostTalk;
-  clearInterval(polishTimer); polishTimer = setInterval(() => { if (S.polish && S.polish.auto && ["host","demo"].includes(S.role)) polishRun(false); }, 60000);
+  clearInterval(polishTimer); polishTimer = setInterval(() => { if (S.polish && S.polish.auto && S.role === "host") polishRun(false); }, 60000);
   document.querySelectorAll("[data-tab]").forEach(b => b.onclick = () => { S.tab = b.dataset.tab; renderTabs(); });
   S.tab = "agenda";
   renderAll();
   clearInterval(clockTimer); clockTimer = setInterval(tick, 500);
   window.onbeforeunload = e => { if (S.utts.length && S.role === "host") { e.preventDefault(); e.returnValue = ""; } };
-  if (S.role === "host") startHostNetwork();
-  else $("#netState").textContent = "Simulación sin conexión";
+  startHostNetwork();
 }
 function tick() {
   if (!$("#clock")) return;
@@ -903,7 +916,7 @@ function renderPeople() {
   const pending = list.filter(p => !p.admitted && !p.leftAt), inside = list.filter(p => p.admitted);
   $("#pCount").textContent = inside.filter(p => !p.leftAt).length + " en sala";
   ul.innerHTML = pending.map(p => `<li><span class="av" style="background:var(--line-strong)">${esc(initials(p.name))}</span><div style="min-width:0"><div class="pname">${esc(p.name)}</div><div class="pmeta">${p.role ? esc(p.role) + " · " : ""}Esperando admisión</div></div><div class="row" style="gap:4px"><button class="btn sm pri" data-ad="${p.pid}" type="button">Admitir</button><button class="btn sm ghost" data-rj="${p.pid}" type="button" aria-label="Rechazar">✕</button></div></li>`).join("")
-    + inside.map(p => `<li${p.leftAt ? ' style="opacity:.55"' : ""}><span class="av" style="background:${p.color}">${esc(initials(p.name))}</span><div style="min-width:0"><div class="pname">${esc(p.name)}${p.self ? ' <span class="muted small">(tú)</span>' : ""}</div><div class="pmeta">${p.leftAt ? "Salió " + hhmm(p.leftAt) : (p.talking ? '<span style="color:var(--rec)">Hablando</span>' : p.mic === "on" ? '<span style="color:var(--ok)">Micrófono activo</span>' : p.mic === "denied" ? '<span style="color:var(--rec)">Sin permiso de micrófono</span>' : "Micrófono en espera")}${p.local === "available" || p.local === "local" ? ' · <span title="Procesa la voz en su dispositivo">local</span>' : p.local === "demo" ? "" : ' · <span title="Usa el servicio de voz de su navegador">nube</span>'}${p.cal ? ' · <span title="Micrófono ajustado a su voz">ajustado</span>' : ""}</div></div><div class="meter" aria-hidden="true"><i style="width:${Math.round((p.level||0)*100)}%"></i></div></li>`).join("");
+    + inside.map(p => `<li${p.leftAt ? ' style="opacity:.55"' : ""}><span class="av" style="background:${p.color}">${esc(initials(p.name))}</span><div style="min-width:0"><div class="pname">${esc(p.name)}${p.self ? ' <span class="muted small">(tú)</span>' : ""}</div><div class="pmeta">${p.leftAt ? "Salió " + hhmm(p.leftAt) : (p.talking ? '<span style="color:var(--rec)">Hablando</span>' : p.mic === "on" ? '<span style="color:var(--ok)">Micrófono activo</span>' : p.mic === "denied" ? '<span style="color:var(--rec)">Sin permiso de micrófono</span>' : "Micrófono en espera")}${p.local === "available" || p.local === "local" ? ' · <span title="Procesa la voz en su dispositivo">local</span>' : ' · <span title="Usa el servicio de voz de su navegador">nube</span>'}${p.cal ? ' · <span title="Micrófono ajustado a su voz">ajustado</span>' : ""}</div></div><div class="meter" aria-hidden="true"><i style="width:${Math.round((p.level||0)*100)}%"></i></div></li>`).join("");
   ul.querySelectorAll("[data-ad]").forEach(b => b.onclick = () => admit(b.dataset.ad, true));
   ul.querySelectorAll("[data-rj]").forEach(b => b.onclick = () => admit(b.dataset.rj, false));
 }
@@ -957,7 +970,7 @@ function renderTranscript() {
   tx.innerHTML = html + `<div class="interim" id="interim"></div>`;
   const vs = $("#viewSeg"); if (vs) vs.hidden = !S.utts.some(u => u.orig);
   tx.querySelectorAll("[data-op]").forEach(b => b.onclick = () => uttOp(b.closest("[data-id]").dataset.id, b.dataset.op, b));
-  if (nearBottom || S.role === "demo") tx.scrollTop = tx.scrollHeight;
+  if (nearBottom) tx.scrollTop = tx.scrollHeight;
 }
 function hl(t) { const e = esc(t); if (!S.filter) return e; const f = esc(S.filter).replace(/[.*+?^${}()|[\]\\]/g,"\\$&"); return e.replace(new RegExp(f, "gi"), m => `<mark>${m}</mark>`); }
 function uttOp(id, op, btn) {
@@ -1019,22 +1032,18 @@ async function toggleRec() {
     else sysLine("Se reanuda la transcripción.");
     S.rec = true; S.recSince = Date.now();
     if (S.role === "host" && S.meeting.myMic) await startHostMic();
-    if (S.role === "demo") demoResume();
   } else {
     S.rec = false; S.recMs += Date.now() - (S.recSince || Date.now()); S.recSince = null; sysLine("Transcripción en pausa.");
     if (mic) mic.stop();
-    if (S.role === "demo") demoPause();
   }
   broadcast(); renderRec(); renderTranscript();
 }
 function toggleOff() {
   if (!S.off) {
     S.off = true; S.offStart = Date.now(); if (mic) mic.stop();
-    if (S.role === "demo") demoPause();
   } else {
     S.off = false; sysLine(`Tramo fuera de acta entre las ${hhmm(S.offStart)} y las ${hhmm(Date.now())}. Por decisión de la presidencia, su contenido no se transcribe.`);
     if (hostShouldListen() && mic) mic.start();
-    if (S.rec && S.role === "demo") demoResume();
   }
   broadcast(); renderRec(); renderTranscript();
 }
@@ -1107,7 +1116,6 @@ function openLiveVote(subject, secret) {
   if (S.vote && S.vote.open) { toast("Ya hay una votación abierta"); return; }
   S.vote = {id:uid(), subject, secret, open:true, ballots:new Map(), item:S.curItem, openedAt:Date.now(), final:null};
   broadcast(); renderVotePanel();
-  if (S.role === "demo") demoBallots();
 }
 function castVote(pid, choice) {
   const v = S.vote; if (!v || !v.open || !CHOICES[choice]) return;
@@ -1137,7 +1145,7 @@ function resultBarsHTML(f) {
 function renderVotePanel() {
   let el = $("#vpanel");
   const v = S.vote;
-  if (!v || !["host","demo"].includes(S.role)) { if (el) el.remove(); return; }
+  if (!v || S.role !== "host") { if (el) el.remove(); return; }
   if (!el) { el = document.createElement("section"); el.id = "vpanel"; el.className = "card vpanel"; el.setAttribute("aria-live","polite"); document.body.appendChild(el); }
   const dock = $(".dock"); if (dock) el.style.bottom = (dock.offsetHeight + 12) + "px";
   const el2 = eligibleVoters(), cast = v.open ? [...v.ballots.keys()].filter(pid => el2.some(p => p.pid === pid)).length : v.final.cast;
@@ -1784,80 +1792,10 @@ function endMeeting() {
     [{label:"Volver a la reunión"},{label:"Descargar transcripción", act: () => { exportDocx({kind:"transcript"}); return true; }},{label:"Finalizar y borrar todo", cls:"rec", act: () => {
       S.people.forEach(p => { try { p.conn && p.conn.send({t:"end"}); } catch {} });
       setTimeout(() => { try { peer && peer.destroy(); } catch {} peer = null; }, 400);
-      if (mic) { mic.close(); mic = null; } clearInterval(clockTimer); clearInterval(polishTimer); demoStop(); const vp = $("#vpanel"); if (vp) vp.remove();
+      if (mic) { mic.close(); mic = null; } clearInterval(clockTimer); clearInterval(polishTimer); const vp = $("#vpanel"); if (vp) vp.remove();
       S = freshState(); window.onbeforeunload = null;
       endScreen("Reunión finalizada. Se ha borrado todo el contenido de este dispositivo.");
     }}]);
-}
-
-/* -------------------- Demostración -------------------- */
-const DEMO_PEOPLE = [
-  {pid:"d1", name:"Lucía Moreno Cabrera", role:"Presidenta de la comisión"},
-  {pid:"d2", name:"Javier Ortega Ruiz", role:"Didáctica de las Matemáticas"},
-  {pid:"d3", name:"Elena Vílchez Soto", role:"Didáctica de la Lengua"},
-  {pid:"d4", name:"Tomás Herrera Gil", role:"Educación Física"},
-];
-const DEMO_SCRIPT = [
-  ["d1","Buenos días a todos. Empezamos con el primer punto, la aprobación del acta de la sesión anterior. ¿Alguna observación?"],
-  ["d3","Solo una corrección: en el segundo punto pone que la entrega era el día doce y fue el día catorce."],
-  ["d1","De acuerdo, se corrige. Si no hay más observaciones, damos el acta por aprobada con esa modificación.", ["acuerdo"]],
-  ["sys:item",1],
-  ["d1","pasamos al calendario de pruebas de evaluación del primer cuatrimestre tenéis la propuesta en el documento compartido"],
-  ["d2","eh bueno pues a ver me preocupa que en tercero coincidan eh tres pruebas en la semana del 19 de enero que para el alumnado es mucha carga la verdad"],
-  ["d4","Yo puedo mover la prueba práctica de Educación Física a la semana anterior sin problema."],
-  ["dup","d2","Yo puedo mover la prueba práctica de educación física a la semana anterior sin problema"],
-  ["d3","Entonces quedarían dos pruebas esa semana, que me parece razonable."],
-  ["hand","d2"],
-  ["livevote","Aprobación del calendario de pruebas del primer cuatrimestre con el cambio propuesto"],
-  ["sys:item",2],
-  ["d2","Sobre los trabajos interdisciplinares, propongo que en cuarto se haga un único proyecto entre Matemáticas y Lengua sobre la lectura de datos en la prensa."],
-  ["d3","Me parece muy buena idea. Puedo preparar yo una primera rúbrica común antes del treinta de noviembre.", ["tarea"]],
-  ["d1","Perfecto. Javier, ¿te encargas de redactar la guía del proyecto para el alumnado?"],
-  ["d2","Sí, la tengo para la próxima comisión.", ["tarea"]],
-  ["sys:item",3],
-  ["d4","Un ruego: que las convocatorias lleguen con una semana de antelación, porque esta llegó con dos días."],
-  ["d1","Tomamos nota. Sin más asuntos, levantamos la sesión. Gracias a todos."],
-];
-let demoIdx = 0;
-function startDemo() {
-  demoStop();
-  S = freshState(); S.role = "demo"; S.code = "DEMO24";
-  const today = new Date();
-  S.meeting = { body:"Comisión de Coordinación Horizontal de 3.º y 4.º", title:"Sesión ordinaria · Ejemplo", date:today.toISOString().slice(0,10), time:"10:00", place:"Sala de juntas, edificio principal", type:"Ordinaria",
-    chair:"Lucía Moreno Cabrera, presidenta", secretary:"Secretaría de la comisión", items:["Lectura y aprobación, si procede, del acta de la sesión anterior","Calendario de pruebas de evaluación del primer cuatrimestre","Trabajos interdisciplinares de 4.º curso","Ruegos y preguntas"],
-    captureMode:"multi", strict:true, admit:true, me:"Secretaría", myMic:false, glossary:"Prácticum, TFG, PAT, CUSAFA" };
-  S.people.set("host", {pid:"host", name:"Secretaría", role:"Secretaría", admitted:true, local:"demo", mic:"off", joinedAt:Date.now(), color:colorFor(0), self:true});
-  DEMO_PEOPLE.forEach((p,i) => S.people.set(p.pid, {...p, admitted:i < 3, local:"demo", mic:"off", joinedAt:Date.now(), consentAt:Date.now(), color:colorFor(i+1), level:0}));
-  demoIdx = 0;
-  go("host");
-  toast("Admite a Tomás Herrera y pulsa Iniciar transcripción", 4200);
-}
-function demoResume() {
-  S.people.forEach(p => { if (p.admitted && p.pid !== "host") p.mic = "on"; }); renderPeople();
-  clearInterval(demoTimer); demoTimer = setInterval(demoStep, 2300); demoStep();
-}
-function demoPause() { clearInterval(demoTimer); demoTimer = null; S.people.forEach(p => { if (p.pid !== "host") { p.mic = "off"; p.level = 0; } }); renderPeople(); }
-function demoBallots() {
-  const plan = {d1:"yes", d2:"yes", d3:"yes", d4:"abs"};
-  const vid = S.vote && S.vote.id;
-  Object.keys(plan).forEach((pid, i) => setTimeout(() => { if (S.role === "demo" && S.vote && S.vote.id === vid && S.vote.open) castVote(pid, plan[pid]); }, 900 + i * 850));
-}
-function demoStop() { clearInterval(demoTimer); demoTimer = null; }
-function demoStep() {
-  if (!S || S.role !== "demo" || !S.rec || S.off) return;
-  if (S.vote && S.vote.open) return;
-  if (demoIdx >= DEMO_SCRIPT.length) { demoPause(); toast("Fin de la demostración. Prueba las pestañas Acta con IA y Exportar.", 5000); return; }
-  const st = DEMO_SCRIPT[demoIdx++];
-  S.people.forEach(p => p.level = 0);
-  if (st[0] === "sys:item") { setItem(st[1]); return demoStep(); }
-  if (st[0] === "hand") { const p = S.people.get(st[1]); p.hand = true; p.handAt = Date.now(); renderHands(); return; }
-  if (st[0] === "livevote") { openLiveVote(st[1], false); toast("Votación abierta. Vota desde el panel y ciérrala cuando quieras.", 4500); return; }
-  if (st[0] === "vote") { S.utts.push({id:uid(), kind:"vote", pid:"host", name:"Votación", text:st[1], vote:{subject:st[1], yes:st[2], no:st[3], abs:st[4], result:st[5]}, t:Date.now(), item:S.curItem, tags:[]}); renderTranscript(); renderTabs(); return; }
-  if (st[0] === "dup") { ingest({pid:st[1], text:st[2], t:Date.now()-3500, end:Date.now()-1200, score:-15}); return; }
-  const p = S.people.get(st[0]);
-  if (!p.admitted) { if (st[0] === "d4") { admit("d4", true); p.mic = "on"; } }
-  p.level = 0.55 + Math.random()*0.3;
-  ingest({pid:st[0], text:st[1], t:Date.now()-1800, end:Date.now(), score:-1, tags:st[2] ? [...st[2]] : []});
 }
 
 /* -------------------- Arranque -------------------- */

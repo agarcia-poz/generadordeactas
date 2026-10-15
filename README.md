@@ -31,7 +31,6 @@ Desarrollada para el **Centro Universitario Sagrada Familia (Úbeda)**, aplicabl
 - Exportación a **Word (.docx)** con nombres o anonimizada.
 - **Acta con IA** en tres modos: nominal, sin nombres o solo acuerdos y tareas.
 - Proyección del QR a pantalla completa y estadísticas orientativas de participación.
-- Demostración con datos de ejemplo.
 
 ## Privacidad
 
@@ -84,6 +83,11 @@ Para no depender del servidor público de PeerJS, informática puede desplegar [
 
 ```
 index.html   La aplicación completa (HTML, CSS y JavaScript en un único archivo)
+icon.svg, favicon-32.png, apple-touch-icon.png, icon-192.png, icon-512.png
+             Iconos de la pestaña, la pantalla de inicio del móvil y la app instalada
+og-image.png Imagen de vista previa al compartir el enlace
+manifest.webmanifest
+             Permite instalar la app en el móvil desde el navegador
 .nojekyll    Indica a GitHub Pages que sirva los archivos sin procesarlos
 README.md    Este documento
 ```
