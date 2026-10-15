@@ -14,7 +14,13 @@ Desarrollada para el **Centro Universitario Sagrada Familia (Úbeda)**, aplicabl
 ## Funciones
 
 - Orden del día vivo: cada intervención queda asociada al punto en curso.
-- Fusión de ecos: si dos micrófonos captan la misma frase, se conserva la del que la oyó más fuerte.
+- Tres modos de captura:
+  - **Automática:** cada micrófono transcribe de forma continua. Cada dispositivo se ajusta a la voz de su usuario leyendo una frase al entrar. Si varios micrófonos captan la misma frase, se atribuye al que la oyó con más intensidad respecto a la voz de su usuario. Las frases dudosas se reasignan a quien sonaba más cerca y se marcan con «Revisar autoría».
+  - **Pulsar para hablar:** cada asistente pulsa un botón al empezar a hablar y otra vez al terminar. Es la opción más fiable para atribuir cada frase.
+  - **Un dispositivo:** solo transcribe el ordenador de la secretaría, que indica quién tiene la palabra.
+- Las frases seguidas de una misma persona se unen en una sola intervención, con mayúscula inicial y punto final.
+- Vocabulario de la reunión (siglas, nombres propios) para mejorar el reconocimiento en los navegadores que lo admiten.
+- **Pulir con IA:** corrige la transcripción en grado **Fiel** (puntuación, tildes y palabras mal reconocidas) o **Legible** (además quita muletillas y repeticiones), sin resumir ni cambiar el sentido. Se conserva siempre el original, que se puede consultar o restaurar. Puede funcionar de forma automática durante la reunión.
 - Sala de espera: la secretaría admite a cada persona antes de que su voz cuente.
 - Turno de palabra: los asistentes piden la palabra desde su dispositivo.
 - **Votación en directo** desde cada dispositivo, pública o secreta. Cada asistente vota en su pantalla (a favor, en contra o abstención) y puede cambiar su voto hasta el cierre; la secretaría ve la participación y, al cerrar, el recuento queda registrado en la transcripción. En la votación secreta solo se conserva el recuento.
@@ -34,6 +40,7 @@ Desarrollada para el **Centro Universitario Sagrada Familia (Úbeda)**, aplicabl
 - No tiene servidor ni base de datos. La transcripción existe solo en la memoria del navegador de la secretaría.
 - No usa cookies, `localStorage`, `IndexedDB` ni analítica.
 - No graba ni transmite audio: cada dispositivo envía únicamente texto.
+- Para saber quién habla, cada dispositivo comparte con la secretaría el nivel de volumen de su micrófono: un número, nunca el sonido.
 - El texto viaja de navegador a navegador por un canal cifrado (WebRTC). El servicio de enlace solo pone en contacto a los dispositivos; el contenido no pasa por él.
 - Cada asistente da su consentimiento antes de activar el micrófono.
 - **Finalizar y borrar** elimina el contenido también en los dispositivos de los asistentes.
@@ -41,7 +48,7 @@ Desarrollada para el **Centro Universitario Sagrada Familia (Úbeda)**, aplicabl
 **Lo que depende de terceros**
 
 - **Reconocimiento de voz.** Lo realiza el navegador. Chrome puede hacerlo dentro del dispositivo. Si no puede, envía el audio al servicio de su fabricante (Google en Chrome, Apple en Safari). Cada pantalla indica cuál se usa, y el **modo estricto** solo permite transcribir a los dispositivos que procesan la voz en local.
-- **Redacción con IA (opcional).** El texto se envía a la API de Anthropic. En el acta sin nombres, estos se sustituyen en el dispositivo antes del envío.
+- **Redacción y pulido con IA (opcionales).** El texto se envía a la API de Anthropic. El pulido no indica quién dice cada frase, y en el acta sin nombres estos se sustituyen en el dispositivo antes del envío.
 - **Servicio de enlace.** Por defecto se usa el servidor público de [PeerJS](https://peerjs.com), que ve las direcciones IP de los dispositivos, pero no el contenido. Para uso institucional se recomienda un servidor propio (ver más abajo).
 
 Antes de usarla con datos reales, conviene validarla con la persona responsable de protección de datos del centro.

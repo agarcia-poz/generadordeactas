@@ -305,6 +305,20 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--brand);b
 .vsent svg{width:20px;height:20px;color:var(--ok);flex:none}
 .vpriv{display:flex;gap:10px;font-size:13px;color:var(--muted);line-height:1.45}
 .vpriv svg{width:18px;height:18px;flex:none;margin-top:1px}
+/* pulsar para hablar y ajuste del micrófono */
+.ptt{width:100%;max-width:340px;min-height:64px;padding:16px 20px;border-radius:14px;border:0;background:var(--brand);color:#fff;font-size:18px;font-weight:600;cursor:pointer;display:flex;gap:12px;justify-content:center;align-items:center;-webkit-tap-highlight-color:transparent;transition:background .15s,transform .1s}
+.ptt:active{transform:scale(.98)}
+.ptt.on{background:var(--rec)}
+.ptt svg{width:24px;height:24px}
+.calbox{display:flex;flex-direction:column;gap:12px}
+.calbox .say{font-family:var(--f-doc);font-size:19px;line-height:1.4;padding:12px 14px;border-left:3px solid var(--brand);background:var(--brand-tint);border-radius:4px}
+.calbar{height:8px;border-radius:4px;background:var(--surface-2);overflow:hidden}
+.calbar i{display:block;height:100%;background:var(--ok);width:0;transition:width .1s}
+.tag.doubt{background:var(--warn-soft);color:var(--warn);border:0;cursor:pointer;font-family:inherit}
+.tag.pol{background:var(--brand-soft);color:var(--brand);text-transform:none;letter-spacing:0;font-weight:500}
+.seg3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+.seg3 button{padding:9px 6px;line-height:1.25}
+.seg.sm button{padding:5px 10px;font-size:12.5px}
 .toast{position:fixed;left:50%;top:calc(76px + env(safe-area-inset-top,0px));transform:translateX(-50%);background:var(--brand-ink);color:var(--bg);padding:10px 16px;border-radius:6px;font-size:14px;z-index:70;box-shadow:var(--shadow);max-width:calc(100% - 32px)}
 .foot{padding-block:24px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted)}
 .foot .wrap{display:flex;gap:16px;justify-content:space-between;flex-wrap:wrap}
@@ -367,6 +381,7 @@ const I = {
   cross:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg>',
   minus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 12h12"/></svg>',
   ballot:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 13h16v7H4zM8 13V4h8v9"/><path d="M10 8l1.5 1.5L14 7"/></svg>',
+  undo:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>',
   spark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M6 18l2.5-2.5M15.5 8.5L18 6"/></svg>',
 };
 
@@ -384,11 +399,13 @@ function freshState() {
     dupes: 0, speaker: null, filter: "", tab: "people", ai: {text:"", busy:false, mode:"nominal"},
     apiKey: "", aiModel: "claude-sonnet-5-5",
     vote: null,            // votación en curso {id, subject, secret, open, ballots:Map, item, final}
+    polish: {level:"fiel", auto:false, busy:false, progress:""}, view: "polished",
+    hostCal: undefined, hostTalking: false,
   };
 }
 S = freshState();
 
-let peer = null, hostConn = null, mic = null, demoTimer = null, clockTimer = null, wakeLock = null;
+let peer = null, hostConn = null, mic = null, demoTimer = null, clockTimer = null, wakeLock = null, polishTimer = null;
 
 /* -------------------- Utilidades UI -------------------- */
 function toast(msg, ms = 2600) {
@@ -432,12 +449,13 @@ function showPrivacy() {
       <li>Entre dispositivos, el texto viaja directamente de un navegador a otro por un canal cifrado (WebRTC). Un servicio de enlace solo pone en contacto a los dispositivos; el contenido no pasa por él.</li>
       <li>El audio nunca se graba ni se envía a la sala: cada dispositivo convierte su voz en texto y solo comparte el texto.</li>
       <li>Cada participante da su consentimiento antes de activar el micrófono, y puede salir en cualquier momento.</li>
+      <li>Para saber quién habla, cada dispositivo comparte con la secretaría el nivel de volumen de su micrófono: un número, nunca el sonido.</li>
       <li>Quien preside puede abrir un tramo <b>Fuera de acta</b>: durante ese tiempo ningún dispositivo transcribe.</li>
     </ul>
     <h4>Lo que depende de terceros (y cómo controlarlo)</h4>
     <ul>
       <li><b>Reconocimiento de voz.</b> Lo hace el navegador. Chrome puede hacerlo dentro del propio dispositivo; si no puede, envía el audio al servicio de voz de su fabricante (Google en Chrome, Apple en Safari). La app muestra en cada dispositivo cuál de los dos se usa, y el <b>modo estricto</b> impide participar a quien no pueda transcribir en local.</li>
-      <li><b>Redacción con IA.</b> Es opcional. Si se usa, el texto se envía al modelo de IA para generar el acta. La versión anónima sustituye los nombres antes de enviarlo, de modo que la IA no los recibe.</li>
+      <li><b>Redacción y pulido con IA.</b> Son opcionales. Si se usan, el texto se envía al modelo de IA. El pulido no indica quién dice cada frase, y el acta anónima sustituye los nombres antes de enviarlos, de modo que la IA no los recibe.</li>
       <li><b>Documento final.</b> El Word que descargas queda bajo tu custodia y la del centro, como cualquier acta.</li>
     </ul>
     <h4>Lo que conviene revisar siempre</h4>
@@ -465,39 +483,104 @@ function privBadge(local) {
 }
 
 /* -------------------- Micrófono + reconocimiento -------------------- */
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+function pct(arr, q) { if (!arr.length) return null; const a = [...arr].sort((x, y) => x - y); return a[Math.min(a.length - 1, Math.floor(q * (a.length - 1)))]; }
+
+/* Micrófono. Mide el volumen 20 veces por segundo (en decibelios) para saber con qué
+   intensidad oyó cada frase, comparado con la voz de su propio usuario. */
 class Mic {
-  constructor({onFinal, onInterim, onLevel, onState, local}) { Object.assign(this, {onFinal, onInterim, onLevel, onState, local}); this.on=false; this.acc=0; this.n=0; this.uStart=null; }
+  constructor({onFinal, onInterim, onLevel, onState, onActivity, local}) { Object.assign(this, {onFinal, onInterim, onLevel, onState, onActivity, local}); this.on = false; this.frames = []; this.uStart = null; this.cal = null; this.phrases = []; }
   async open() {
     if (!window.isSecureContext) throw new Error("insecure");
     if (!SR) throw new Error("nosr");
     this.stream = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true, noiseSuppression:true, autoGainControl:false}});
-    const AC = window.AudioContext || window.webkitAudioContext; this.ac = new AC();
+    this.track = this.stream.getAudioTracks()[0] || null;
+    const AC = window.AudioContext || window.webkitAudioContext; this.ac = new AC(); try { await this.ac.resume(); } catch {}
     const src = this.ac.createMediaStreamSource(this.stream); this.an = this.ac.createAnalyser(); this.an.fftSize = 1024; src.connect(this.an);
     const buf = new Float32Array(this.an.fftSize);
-    const loop = () => { if (!this.an) return; this.an.getFloatTimeDomainData(buf); let s=0; for (const v of buf) s+=v*v; const rms = Math.sqrt(s/buf.length);
-      const lvl = Math.min(1, rms*7); if (this.on) { this.acc += lvl; this.n++; } this.onLevel && this.onLevel(lvl); this.raf = requestAnimationFrame(loop); };
-    loop();
+    this.iv = setInterval(() => {
+      if (!this.an) return;
+      this.an.getFloatTimeDomainData(buf); let s = 0; for (const v of buf) s += v*v; const rms = Math.sqrt(s/buf.length);
+      const db = 20 * Math.log10(rms + 1e-9); this.frames.push([Date.now(), db]); if (this.frames.length > 900) this.frames.splice(0, this.frames.length - 900);
+      this.onLevel && this.onLevel(Math.min(1, rms*7), this.rel(db));
+    }, 50);
+  }
+  noiseFloor() { return pct(this.frames.slice(-400).map(f => f[1]), 0.1) ?? -70; }
+  /* Intensidad relativa: 0 ≈ la voz de su usuario; muy negativa ≈ voz lejana. */
+  rel(db) { if (db < -100) return null; return this.cal ? db - this.cal.voice : (db - this.noiseFloor()) - 28; }
+  score(t0, t1) {
+    const fs = this.frames.filter(f => f[0] >= t0 && f[0] <= t1).map(f => f[1]);
+    if (fs.length < 4) return null; const p = pct(fs, 0.9); if (p < -100) return null;
+    const r = this.rel(p); return r === null ? null : Math.round(r * 10) / 10;
   }
   start() {
-    if (this.on) return; this.on = true;
+    if (this.on) return; this.on = true; this.uStart = null;
     const r = this.r = new SR(); r.lang = LANG; r.continuous = true; r.interimResults = true; r.maxAlternatives = 1;
     if (this.local) { try { r.processLocally = true; } catch {} }
+    if (this.phrases.length && typeof window.SpeechRecognitionPhrase === "function") { try { r.phrases = this.phrases.slice(0, 100).map(x => new window.SpeechRecognitionPhrase(x, 3)); } catch {} }
     r.onresult = e => {
       let interim = "";
       for (let i = e.resultIndex; i < e.results.length; i++) {
         const res = e.results[i], text = res[0].transcript.trim();
         if (!this.uStart) this.uStart = Date.now();
-        if (res.isFinal) { if (text) this.onFinal(text, this.uStart, Date.now(), this.n ? this.acc/this.n : 0); this.acc = 0; this.n = 0; this.uStart = null; }
+        this.onActivity && this.onActivity();
+        if (res.isFinal) { const end = Date.now(), t0 = this.uStart - 1200; if (text) this.onFinal(text, t0, end, this.score(t0 - 600, end)); this.uStart = null; }
         else interim += text + " ";
       }
       this.onInterim && this.onInterim(interim.trim());
     };
-    r.onerror = e => { if (e.error === "not-allowed" || e.error === "service-not-allowed") { this.on = false; this.onState && this.onState("denied"); } else if (e.error === "language-not-supported") { this.on=false; this.onState && this.onState("lang"); } };
-    r.onend = () => { if (this.on) setTimeout(() => { if (this.on) { try { r.start(); } catch {} } }, 250); };
-    try { r.start(); this.onState && this.onState("on"); } catch { this.onState && this.onState("error"); }
+    r.onerror = e => {
+      if (e.error === "not-allowed" || e.error === "service-not-allowed") { this.on = false; this.onState && this.onState("denied"); }
+      else if (e.error === "language-not-supported") { this.on = false; this.onState && this.onState("lang"); }
+      else if (e.error === "audio-capture") this.trackFail = true;
+    };
+    r.onend = () => { if (this.on && this.r === r) setTimeout(() => { if (this.on && this.r === r) this.begin(r); }, 250); };
+    this.begin(r);
+  }
+  /* Si el navegador lo permite, el reconocimiento usa el mismo micrófono que el medidor de volumen.
+     Así se evita que en algunos móviles los dos compitan por el micrófono. */
+  begin(r) {
+    try { if (this.track && !this.trackFail && this.track.readyState === "live") r.start(this.track); else r.start(); this.onState && this.onState("on"); }
+    catch (e) {
+      if (this.track && !this.trackFail) { this.trackFail = true; try { r.start(); this.onState && this.onState("on"); return; } catch {} }
+      this.onState && this.onState("error");
+    }
   }
   stop() { this.on = false; try { this.r && this.r.stop(); } catch {} this.onInterim && this.onInterim(""); this.onState && this.onState("off"); }
-  close() { this.stop(); cancelAnimationFrame(this.raf); this.an = null; try { this.stream.getTracks().forEach(t => t.stop()); } catch {} try { this.ac.close(); } catch {} }
+  close() { this.stop(); clearInterval(this.iv); this.an = null; try { this.stream.getTracks().forEach(t => t.stop()); } catch {} try { this.ac.close(); } catch {} }
+}
+
+/* Ajuste del micrófono a la voz de su usuario: mide el ruido de la sala y la voz al leer una frase. */
+function calibrateUI(box, m, sentence) {
+  return new Promise(resolve => {
+    let token = 0; const finish = cal => { token++; resolve(cal); };
+    const run = async () => {
+      const my = ++token;
+      const alive = () => my === token && box.isConnected;
+      box.innerHTML = `<div class="card pad calbox"><div class="row" style="justify-content:space-between"><h3>Ajuste del micrófono</h3><button class="btn ghost sm" data-skip type="button">Omitir</button></div>
+        <p class="small muted" data-msg>Guarda silencio un momento…</p><div class="say" data-say hidden>${esc(sentence)}</div><div class="calbar"><i data-bar></i></div>
+        <p class="small muted">Sirve para distinguir tu voz de la de quienes están cerca. Esta frase no se transcribe.</p></div>`;
+      box.querySelector("[data-skip]").onclick = () => finish(null);
+      const msg = box.querySelector("[data-msg]"), bar = box.querySelector("[data-bar]"), say = box.querySelector("[data-say]");
+      const t0 = Date.now();
+      while (Date.now() - t0 < 1800) { if (!alive()) { if (my === token) finish(null); return; } bar.style.width = ((Date.now() - t0) / 18) + "%"; await sleep(100); }
+      const noise = pct(m.frames.filter(f => f[0] >= t0).map(f => f[1]), 0.5);
+      if (noise === null || noise < -100) { box.innerHTML = `<div class="notice small">No se puede medir el volumen en este dispositivo. Se usará el ajuste automático.</div>`; return finish(null); }
+      msg.textContent = "Ahora lee en voz alta, con tu tono normal:"; say.hidden = false; bar.style.width = "0%";
+      const t1 = Date.now(); let voiced = [];
+      while (Date.now() - t1 < 10000) {
+        if (!alive()) { if (my === token) finish(null); return; }
+        voiced = m.frames.filter(f => f[0] >= t1 && f[1] > noise + 12).map(f => f[1]);
+        bar.style.width = Math.min(100, voiced.length / 40 * 100) + "%"; if (voiced.length >= 40) break; await sleep(100);
+      }
+      if (voiced.length < 40) {
+        box.innerHTML = `<div class="card pad calbox"><p class="small">No te hemos oído con claridad. Acerca el dispositivo o habla un poco más alto.</p><div class="row"><button class="btn sm pri" data-retry type="button">Repetir</button><button class="btn sm" data-skip type="button">Continuar sin ajuste</button></div></div>`;
+        box.querySelector("[data-retry]").onclick = run; box.querySelector("[data-skip]").onclick = () => finish(null); return;
+      }
+      finish({noise, voice: pct(voiced, 0.7)});
+    };
+    run();
+  });
 }
 function micErrorText(err) {
   const m = String(err && (err.message || err.name) || err);
@@ -512,27 +595,72 @@ function micErrorText(err) {
 const norm = t => t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-zñ0-9\s]/g," ").split(/\s+/).filter(w => w.length > 2);
 function similarity(a, b) { const A = new Set(norm(a)), B = new Set(norm(b)); if (!A.size || !B.size) return 0; let n = 0; A.forEach(w => { if (B.has(w)) n++; }); return 2*n/(A.size+B.size); }
 
-/* Recibe una intervención. Si otro dispositivo ya ha captado lo mismo (eco en sala),
-   se conserva la del micrófono que oyó más fuerte, que es el de quien habla. */
+function containment(a, b) { const A = new Set(norm(a)), B = new Set(norm(b)); if (!A.size || !B.size) return 0; let n = 0; A.forEach(w => { if (B.has(w)) n++; }); return n / Math.min(A.size, B.size); }
+const ECHO_GAP = 2500, PART_GAP = 4000, DOUBT = -12;
+function tidy(t) { t = String(t).replace(/\s+/g, " ").trim(); if (!t) return t; t = t[0].toUpperCase() + t.slice(1); if (!/[.?!…:;]$/.test(t)) t += "."; return t; }
+function speechUtts() { return S.utts.filter(u => u.kind === "speech"); }
+function rebuild(u) {
+  if (!u.edited && !u.polished) u.text = u.parts.map(x => tidy(x.text)).join(" ");
+  u.t = Math.min(...u.parts.map(x => x.t)); u.end = Math.max(...u.parts.map(x => x.end));
+  u.doubt = u.parts.some(x => x.doubt || x.moved);
+}
+/* Intensidad con la que el micrófono de una persona captó el sonido en un intervalo. */
+function relOf(pid, t0, t1) {
+  if (pid === "host") return mic ? mic.score(t0, t1) : null;
+  const p = S.people.get(pid); if (!p || !p.lv) return null;
+  const v = p.lv.filter(x => x[0] >= t0 && x[0] <= t1 + 400).map(x => x[1]);
+  return v.length >= 2 ? pct(v, 0.9) : null;
+}
+/* Las frases seguidas de la misma persona se unen en una sola intervención. */
+function addPart(part, tags = []) {
+  const last = S.utts[S.utts.length - 1];
+  if (last && last.kind === "speech" && last.pid === part.pid && last.item === S.curItem && !last.edited && !last.polished
+      && !(last.tags || []).length && !(tags || []).length && part.t - last.end < PART_GAP) { last.parts.push(part); rebuild(last); return last; }
+  const sp = S.people.get(part.pid);
+  const u = {id:uid(), kind:"speech", pid:part.pid, name: sp ? sp.name : "Asistente", parts:[part], item:S.curItem, tags:[...(tags || [])]};
+  rebuild(u); insertUtt(u); return u;
+}
+/* Inserta en orden cronológico solo entre intervenciones del mismo punto, sin saltar
+   por encima de cambios de punto, votaciones o notas, que marcan la estructura del acta. */
+function insertUtt(u) {
+  let i = S.utts.length;
+  while (i > 0) { const q = S.utts[i - 1]; if (q.kind === "speech" && q.item === u.item && q.t > u.t) i--; else break; }
+  S.utts.splice(i, 0, u);
+}
+function removePart(u, q) {
+  u.parts = u.parts.filter(x => x !== q);
+  if (!u.parts.length) S.utts = S.utts.filter(x => x !== u); else rebuild(u);
+}
+function refresh() { renderTranscript(); renderStats(); }
+
+/* Recibe una frase de un micrófono.
+   1. Si otro micrófono ya ha captado la misma frase (eco en la sala), se queda la del
+      micrófono que la oyó con más intensidad respecto a la voz de su usuario.
+   2. Si llega con poca intensidad, se busca qué micrófono oía más fuerte en ese momento.
+      Si ninguno destaca, se marca para revisar quién habla. */
 function ingest(u) {
   if (!S.rec || S.off) return;
-  const p = S.people.get(u.pid); if (!p || !p.admitted) return;
-  u.id = u.id || uid(); u.item = S.curItem; u.tags = u.tags || []; u.kind = u.kind || "speech"; u.name = p.name;
-  if (S.meeting.captureMode === "single" && S.speaker) { const sp = S.people.get(S.speaker); if (sp) { u.pid = sp.pid; u.name = sp.name; } }
-  else {
-    const recent = S.utts.slice(-30);
-    for (const e of recent) {
-      if (e.kind !== "speech" || e.pid === u.pid) continue;
-      if (Math.abs(e.t - u.t) > 7000) continue;
-      if (similarity(e.text, u.text) < 0.55) continue;
-      S.dupes++;
-      if ((u.level || 0) > (e.level || 0) * 1.15) { e.pid = u.pid; e.name = u.name; e.text = u.text.length >= e.text.length*0.8 ? u.text : e.text; e.level = u.level; e.merged = (e.merged||0)+1; }
-      else { e.merged = (e.merged||0)+1; }
-      renderTranscript(); renderStats(); return;
-    }
+  const p0 = S.people.get(u.pid); if (!p0 || !p0.admitted) return;
+  const part = {id:uid(), pid:u.pid, text:String(u.text || "").trim(), t:u.t, end:u.end || u.t + 1500,
+    score: typeof u.score === "number" && isFinite(u.score) ? u.score : null};
+  if (!part.text) return;
+  if (S.meeting.captureMode === "single") { if (S.speaker && S.people.get(S.speaker)) part.pid = S.speaker; addPart(part, u.tags); return refresh(); }
+  for (const e of speechUtts().slice(-25)) for (const q of e.parts || []) {
+    if (q.pid === part.pid) continue;
+    if (Math.max(q.t, part.t) - Math.min(q.end, part.end) > ECHO_GAP) continue;
+    if (containment(q.text, part.text) < 0.5) continue;
+    S.dupes++;
+    if ((part.score ?? -20) > (q.score ?? -20) + 2) { removePart(e, q); part.merged = (q.merged || 0) + 1; addPart(part, u.tags); }
+    else q.merged = (q.merged || 0) + 1;
+    return refresh();
   }
-  S.utts.push(u); S.utts.sort((a,b) => a.t - b.t);
-  renderTranscript(); renderStats();
+  if (S.meeting.captureMode === "multi" && part.score !== null && part.score < DOUBT) {
+    let best = null, bestS = -Infinity;
+    S.people.forEach(p => { if (!p.admitted || p.leftAt || p.pid === part.pid) return; const v = relOf(p.pid, part.t - 500, part.end); if (v !== null && v > bestS) { bestS = v; best = p; } });
+    if (best && bestS > -8 && bestS > part.score + 6) { part.from = part.pid; part.pid = best.pid; part.moved = true; part.score = bestS; }
+    else part.doubt = true;
+  }
+  addPart(part, u.tags); refresh();
 }
 function sysLine(text) { S.utts.push({id:uid(), kind:"system", text, t:Date.now(), item:S.curItem, tags:[]}); }
 
@@ -616,11 +744,13 @@ function viewCreate() {
       <div class="stack">
         <div class="card pad stack">
           <h2>Captura de voz</h2>
-          <div class="seg" role="group" aria-label="Modo de captura">
-            <button type="button" data-cap="multi" aria-pressed="true">Cada asistente con su dispositivo</button>
-            <button type="button" data-cap="single" aria-pressed="false">Un solo dispositivo</button>
+          <div class="seg seg3" role="group" aria-label="Modo de captura">
+            <button type="button" data-cap="multi" aria-pressed="true">Automática</button>
+            <button type="button" data-cap="ptt" aria-pressed="false">Pulsar para hablar</button>
+            <button type="button" data-cap="single" aria-pressed="false">Un dispositivo</button>
           </div>
           <p class="small muted" id="capHelp"></p>
+          <label class="f">Vocabulario de la reunión (opcional)<textarea id="mGloss" style="min-height:64px" placeholder="Siglas y nombres propios separados por comas: TFG, Prácticum, PAT, CUSAFA…"></textarea></label>
           <label class="check"><input type="checkbox" id="mStrict"><span><b>Modo estricto de privacidad.</b> Solo pueden transcribir los dispositivos capaces de procesar la voz sin enviarla a ningún servicio externo.</span></label>
           <label class="check"><input type="checkbox" id="mAdmit" checked><span><b>Sala de espera.</b> Admito manualmente a cada persona antes de que su voz entre en la transcripción.</span></label>
         </div>
@@ -643,7 +773,8 @@ function viewCreate() {
   drawAg();
   $("#addItem").onclick = () => { items.splice(Math.max(0, items.length-1), 0, ""); drawAg(); const ins = ag.querySelectorAll("input"); ins[Math.max(0, items.length-2)].focus(); };
   let cap = "multi";
-  const capHelp = { multi: "Cada persona se une con su móvil o portátil. La voz de cada uno queda identificada por su dispositivo, y si dos micrófonos captan la misma frase, se queda la del que la oyó más cerca.",
+  const capHelp = { multi: "Cada asistente se une con su dispositivo y su micrófono transcribe de forma continua. Si varios micrófonos captan la misma frase, se atribuye al que la oyó con más intensidad respecto a la voz de su usuario. Las frases dudosas se marcan para revisarlas.",
+    ptt: "Cada asistente pulsa un botón en su móvil al empezar a hablar y otra vez al terminar. Es la opción más fiable para atribuir cada frase a quien la dice, sobre todo si los asistentes están sentados cerca.",
     single: "Solo transcribe este dispositivo. Tú indicas quién tiene la palabra tocando su nombre, y las frases se atribuyen a esa persona. Útil para grupos pequeños o si no todos tienen dispositivo." };
   $("#capHelp").textContent = capHelp.multi;
   document.querySelectorAll("[data-cap]").forEach(b => b.onclick = () => { cap = b.dataset.cap; document.querySelectorAll("[data-cap]").forEach(x => x.setAttribute("aria-pressed", x === b)); $("#capHelp").textContent = capHelp[cap]; });
@@ -657,7 +788,7 @@ function viewCreate() {
     S.role = "host";
     S.meeting = { body, title, date: $("#mDate").value, time: $("#mTime").value, place: $("#mPlace").value.trim(), type: $("#mType").value,
       chair: $("#mChair").value.trim(), secretary: $("#mSec").value.trim(), items: its.length ? its : ["Asuntos"], captureMode: cap,
-      strict: $("#mStrict").checked, admit: $("#mAdmit").checked, me: $("#mMe").value.trim() || "Secretaría", myMic: $("#mMyMic").checked };
+      strict: $("#mStrict").checked, admit: $("#mAdmit").checked, me: $("#mMe").value.trim() || "Secretaría", myMic: $("#mMyMic").checked, glossary: $("#mGloss").value.trim() };
     go("host");
   };
 }
@@ -699,6 +830,8 @@ function viewHost() {
     <section class="card tx">
       <div class="tx-tools">
         <input type="text" id="find" placeholder="Buscar en la transcripción" aria-label="Buscar en la transcripción">
+        <button class="btn sm" id="polBtn" type="button">${I.spark} Pulir con IA</button>
+        <div class="seg sm" id="viewSeg" role="group" aria-label="Texto mostrado" hidden><button type="button" data-view="polished" aria-pressed="true">Pulido</button><button type="button" data-view="original" aria-pressed="false">Original</button></div>
         <span class="sp" style="flex:1"></span>
         <span class="small muted" id="txMeta"></span>
       </div>
@@ -718,6 +851,7 @@ function viewHost() {
   </div></div>
   <div class="dock gut"><div class="wrap">
     <button class="recbtn paused" id="recBtn" type="button"><span class="dot"></span><span>Iniciar transcripción</span></button>
+    <button class="btn" id="talkBtn" type="button" hidden>${I.mic} Hablar</button>
     <button class="btn" id="offBtn" type="button" disabled>Fuera de acta</button>
     <button class="btn" id="nextBtn" type="button">Siguiente punto →</button>
     <button class="btn" id="noteBtn" type="button">${I.edit} Nota</button>
@@ -735,6 +869,10 @@ function viewHost() {
   $("#noteBtn").onclick = addNote;
   $("#voteBtn").onclick = addVote;
   $("#endBtn").onclick = endMeeting;
+  $("#polBtn").onclick = openPolish;
+  document.querySelectorAll("[data-view]").forEach(b => b.onclick = () => { S.view = b.dataset.view; document.querySelectorAll("[data-view]").forEach(x => x.setAttribute("aria-pressed", x === b)); renderTranscript(); });
+  const tb = $("#talkBtn"); tb.hidden = !(S.meeting.captureMode === "ptt" && S.meeting.myMic && S.role === "host"); tb.onclick = toggleHostTalk;
+  clearInterval(polishTimer); polishTimer = setInterval(() => { if (S.polish && S.polish.auto && ["host","demo"].includes(S.role)) polishRun(false); }, 60000);
   document.querySelectorAll("[data-tab]").forEach(b => b.onclick = () => { S.tab = b.dataset.tab; renderTabs(); });
   S.tab = "agenda";
   renderAll();
@@ -765,7 +903,7 @@ function renderPeople() {
   const pending = list.filter(p => !p.admitted && !p.leftAt), inside = list.filter(p => p.admitted);
   $("#pCount").textContent = inside.filter(p => !p.leftAt).length + " en sala";
   ul.innerHTML = pending.map(p => `<li><span class="av" style="background:var(--line-strong)">${esc(initials(p.name))}</span><div style="min-width:0"><div class="pname">${esc(p.name)}</div><div class="pmeta">${p.role ? esc(p.role) + " · " : ""}Esperando admisión</div></div><div class="row" style="gap:4px"><button class="btn sm pri" data-ad="${p.pid}" type="button">Admitir</button><button class="btn sm ghost" data-rj="${p.pid}" type="button" aria-label="Rechazar">✕</button></div></li>`).join("")
-    + inside.map(p => `<li${p.leftAt ? ' style="opacity:.55"' : ""}><span class="av" style="background:${p.color}">${esc(initials(p.name))}</span><div style="min-width:0"><div class="pname">${esc(p.name)}${p.self ? ' <span class="muted small">(tú)</span>' : ""}</div><div class="pmeta">${p.leftAt ? "Salió " + hhmm(p.leftAt) : (p.mic === "on" ? '<span style="color:var(--ok)">Micrófono activo</span>' : p.mic === "denied" ? '<span style="color:var(--rec)">Sin permiso de micrófono</span>' : "Micrófono en espera")}${p.local === "available" || p.local === "local" ? ' · <span title="Procesa la voz en su dispositivo">local</span>' : p.local === "demo" ? "" : ' · <span title="Usa el servicio de voz de su navegador">nube</span>'}</div></div><div class="meter" aria-hidden="true"><i style="width:${Math.round((p.level||0)*100)}%"></i></div></li>`).join("");
+    + inside.map(p => `<li${p.leftAt ? ' style="opacity:.55"' : ""}><span class="av" style="background:${p.color}">${esc(initials(p.name))}</span><div style="min-width:0"><div class="pname">${esc(p.name)}${p.self ? ' <span class="muted small">(tú)</span>' : ""}</div><div class="pmeta">${p.leftAt ? "Salió " + hhmm(p.leftAt) : (p.talking ? '<span style="color:var(--rec)">Hablando</span>' : p.mic === "on" ? '<span style="color:var(--ok)">Micrófono activo</span>' : p.mic === "denied" ? '<span style="color:var(--rec)">Sin permiso de micrófono</span>' : "Micrófono en espera")}${p.local === "available" || p.local === "local" ? ' · <span title="Procesa la voz en su dispositivo">local</span>' : p.local === "demo" ? "" : ' · <span title="Usa el servicio de voz de su navegador">nube</span>'}${p.cal ? ' · <span title="Micrófono ajustado a su voz">ajustado</span>' : ""}</div></div><div class="meter" aria-hidden="true"><i style="width:${Math.round((p.level||0)*100)}%"></i></div></li>`).join("");
   ul.querySelectorAll("[data-ad]").forEach(b => b.onclick = () => admit(b.dataset.ad, true));
   ul.querySelectorAll("[data-rj]").forEach(b => b.onclick = () => admit(b.dataset.rj, false));
 }
@@ -797,6 +935,7 @@ function renderTranscript() {
   const sp = S.utts.filter(u => u.kind === "speech");
   $("#txMeta").textContent = `${sp.length} intervenciones · ${sp.reduce((a,u) => a + words(u.text), 0)} palabras` + (S.dupes ? ` · ${S.dupes} ${S.dupes === 1 ? "eco fusionado" : "ecos fusionados"}` : "");
   if (!us.length) {
+    const vs0 = $("#viewSeg"); if (vs0) vs0.hidden = true;
     tx.innerHTML = `<div class="empty">${I.wave}<p><b>${S.filter ? "Sin resultados" : "La transcripción aparecerá aquí"}</b></p><p class="small">${S.filter ? "Prueba con otra palabra." : "Pulsa Iniciar transcripción cuando todos estén en la sala."}</p></div>`; return;
   }
   let html = "", last = -1;
@@ -808,10 +947,15 @@ function renderTranscript() {
       const v = u.vote; html += `<div class="u vote" data-id="${u.id}"><span class="t">${hhmm(u.t)}</span><div style="min-width:0"><div class="who"><span class="tag acuerdo">Votación</span>${v.mode === "live" ? `<span class="pill">${v.secret ? "Secreta" : "Pública"} · en los dispositivos</span>` : ""}</div><div class="box"><div class="txt" style="margin:0">${esc(v.subject)}</div><div class="small muted mono" style="margin-top:4px">A favor ${v.yes} · En contra ${v.no} · Abstenciones ${v.abs}${v.mode === "live" ? ` · votaron ${v.cast} de ${v.eligible}` : ""} → <b style="color:var(--fg)">${esc(v.result)}</b></div>${voterDetailHTML(v)}</div></div><div class="ops"><button data-op="del" aria-label="Eliminar">${I.trash}</button></div></div>`; continue;
     }
     const tags = (u.tags||[]).map(t => `<span class="tag ${t}">${t === "acuerdo" ? "Acuerdo" : "Tarea"}</span>`).join("");
-    html += `<div class="u ${u.kind === "note" ? "note" : ""}" data-id="${u.id}"><span class="t">${hhmmss(u.t)}</span><div style="min-width:0"><div class="who"><span class="sw" style="background:${col}"></span>${esc(u.kind === "note" ? "Nota de secretaría" : u.name)}${tags}${u.merged ? `<span class="tag merged" title="Otros micrófonos captaron esta frase; se ha conservado una sola vez">eco fusionado</span>` : ""}</div><div class="txt">${hl(u.text)}</div></div>
-      <div class="ops"><button data-op="acuerdo" title="Marcar como acuerdo" aria-label="Marcar como acuerdo">${I.check}</button><button data-op="tarea" title="Marcar como tarea" aria-label="Marcar como tarea">${I.task}</button><button data-op="who" title="Cambiar quién habla" aria-label="Cambiar quién habla">${I.user}</button><button data-op="edit" title="Corregir texto" aria-label="Corregir texto">${I.edit}</button><button data-op="del" title="Eliminar" aria-label="Eliminar">${I.trash}</button></div></div>`;
+    const merged = (u.parts || []).some(x => x.merged), shown = S.view === "original" && u.orig ? u.orig : u.text;
+    const extra = (u.doubt ? `<button class="tag doubt" data-op="who" type="button" title="El micrófono que captó esta frase la oyó con poca intensidad. Comprueba quién la dijo.">Revisar autoría</button>` : "")
+      + (u.orig ? `<span class="tag pol" title="Texto pulido con IA. Pulsa «Original» arriba para ver lo que se transcribió.">pulida</span>` : "")
+      + (merged ? `<span class="tag merged" title="Otros micrófonos captaron esta frase; se ha conservado una sola vez">eco fusionado</span>` : "");
+    html += `<div class="u ${u.kind === "note" ? "note" : ""}" data-id="${u.id}"><span class="t">${hhmmss(u.t)}</span><div style="min-width:0"><div class="who"><span class="sw" style="background:${col}"></span>${esc(u.kind === "note" ? "Nota de secretaría" : u.name)}${tags}${extra}</div><div class="txt">${hl(shown)}</div></div>
+      <div class="ops">${u.orig ? `<button data-op="restore" title="Volver al texto original" aria-label="Volver al texto original">${I.undo}</button>` : ""}<button data-op="acuerdo" title="Marcar como acuerdo" aria-label="Marcar como acuerdo">${I.check}</button><button data-op="tarea" title="Marcar como tarea" aria-label="Marcar como tarea">${I.task}</button><button data-op="who" title="Cambiar quién habla" aria-label="Cambiar quién habla">${I.user}</button><button data-op="edit" title="Corregir texto" aria-label="Corregir texto">${I.edit}</button><button data-op="del" title="Eliminar" aria-label="Eliminar">${I.trash}</button></div></div>`;
   }
   tx.innerHTML = html + `<div class="interim" id="interim"></div>`;
+  const vs = $("#viewSeg"); if (vs) vs.hidden = !S.utts.some(u => u.orig);
   tx.querySelectorAll("[data-op]").forEach(b => b.onclick = () => uttOp(b.closest("[data-id]").dataset.id, b.dataset.op, b));
   if (nearBottom || S.role === "demo") tx.scrollTop = tx.scrollHeight;
 }
@@ -822,14 +966,15 @@ function uttOp(id, op, btn) {
   else if (op === "del") { S.utts = S.utts.filter(x => x.id !== id); renderTranscript(); renderStats(); renderTabs(); }
   else if (op === "edit") {
     const el = btn.closest("[data-id]").querySelector(".txt"); el.contentEditable = "true"; el.textContent = u.text; el.focus();
-    const done = () => { u.text = el.textContent.trim() || u.text; el.contentEditable = "false"; renderTranscript(); renderTabs(); };
+    const done = () => { const nt = el.textContent.trim(); if (nt && nt !== u.text) { u.text = nt; u.edited = true; } el.contentEditable = "false"; renderTranscript(); renderTabs(); };
     el.onblur = done; el.onkeydown = e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); el.blur(); } if (e.key === "Escape") { el.textContent = u.text; el.blur(); } };
   }
   else if (op === "who") {
     const ps = [...S.people.values()].filter(p => p.admitted);
     modal("¿Quién dijo esto?", `<p class="txt" style="font-family:var(--f-doc);margin-bottom:12px">${esc(u.text)}</p><div class="stack">${ps.map(p => `<label class="check"><input type="radio" name="who" value="${p.pid}" ${p.pid === u.pid ? "checked" : ""}>${esc(p.name)}</label>`).join("")}</div>`,
-      [{label:"Cancelar"},{label:"Guardar", cls:"pri", act: m => { const v = m.querySelector("input[name=who]:checked"); if (v) { const p = S.people.get(v.value); u.pid = p.pid; u.name = p.name; renderTranscript(); renderStats(); } }}]);
+      [{label:"Cancelar"},{label:"Guardar", cls:"pri", act: m => { const v = m.querySelector("input[name=who]:checked"); if (v) { const p = S.people.get(v.value); u.pid = p.pid; u.name = p.name; (u.parts || []).forEach(x => { x.pid = p.pid; x.doubt = false; x.moved = false; }); u.doubt = false; renderTranscript(); renderStats(); } }}]);
   }
+  else if (op === "restore") { if (u.orig) { u.text = u.orig; delete u.orig; u.polished = false; u.edited = true; renderTranscript(); renderTabs(); } }
 }
 function renderTabs() {
   document.querySelectorAll("[data-tab]").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === S.tab));
@@ -888,7 +1033,7 @@ function toggleOff() {
     if (S.role === "demo") demoPause();
   } else {
     S.off = false; sysLine(`Tramo fuera de acta entre las ${hhmm(S.offStart)} y las ${hhmm(Date.now())}. Por decisión de la presidencia, su contenido no se transcribe.`);
-    if (S.rec && mic && S.meeting.myMic) mic.start();
+    if (hostShouldListen() && mic) mic.start();
     if (S.rec && S.role === "demo") demoResume();
   }
   broadcast(); renderRec(); renderTranscript();
@@ -1045,6 +1190,21 @@ function admit(pid, yes) {
 }
 
 /* Micrófono del propio anfitrión */
+function hostShouldListen() { return S.rec && !S.off && S.meeting.myMic && (S.meeting.captureMode !== "ptt" || S.hostTalking); }
+function vocabList() {
+  const names = [...S.people.values()].filter(p => p.admitted).map(p => p.name);
+  const g = String(S.meeting.glossary || "").split(/[,;\n]/).map(x => x.trim()).filter(Boolean);
+  return [...new Set([...names, ...g])].slice(0, 80);
+}
+function calibrateModal(m, name) {
+  return new Promise(resolve => {
+    const md = modal("Ajuste de tu micrófono", `<div id="hcal"></div>`, []);
+    const f = md.querySelector(".mf"); if (f) f.remove();
+    let settled = false; const done = cal => { if (settled) return; settled = true; clearInterval(iv); md.remove(); resolve(cal); };
+    const iv = setInterval(() => { if (!md.isConnected) done(null); }, 300);   // si se cierra la ventana, se continúa sin ajuste
+    calibrateUI($("#hcal", md), m, `Soy ${name} y levanto acta de esta reunión del Centro Universitario.`).then(done);
+  });
+}
 async function startHostMic() {
   const me = S.people.get("host");
   try {
@@ -1054,14 +1214,24 @@ async function startHostMic() {
       if (S.meeting.strict && sup.local !== "available") { toast("Modo estricto: este dispositivo no puede transcribir en local. Tu voz no se transcribirá.", 5000); return; }
       me.local = sup.local;
       mic = new Mic({ local: sup.local === "available",
-        onFinal: (text, t, end, level) => ingest({pid:"host", text, t, end, level}),
+        onFinal: (text, t, end, score) => ingest({pid:"host", text, t, end, score}),
         onInterim: txt => { const el = $("#interim"); if (el) el.textContent = txt ? `${me.name}: ${txt}…` : ""; },
         onLevel: l => { me.level = l; },
         onState: s => { me.mic = s; renderPeople(); if (s === "denied") toast(micErrorText("NotAllowed"), 5000); } });
       await mic.open();
     }
-    if (!S.off) mic.start();
-  } catch (e) { mic = null; toast(micErrorText(e), 6000); }
+    if (S.hostCal === undefined) { S.hostCal = await calibrateModal(mic, me.name); mic.cal = S.hostCal; me.cal = !!S.hostCal; renderPeople(); }
+    mic.phrases = vocabList();
+    if (hostShouldListen()) mic.start();
+  } catch (e) { if (mic) { try { mic.close(); } catch {} } mic = null; toast(micErrorText(e), 6000); }
+}
+function toggleHostTalk() {
+  if (!S.rec || S.off) { toast("Inicia la transcripción para poder hablar"); return; }
+  S.hostTalking = !S.hostTalking;
+  const me = S.people.get("host"); if (me) me.talking = S.hostTalking;
+  const b = $("#talkBtn"); b.className = "btn" + (S.hostTalking ? " rec" : ""); b.lastChild.textContent = S.hostTalking ? " Terminar" : " Hablar";
+  if (S.hostTalking) startHostMic(); else if (mic) mic.stop();
+  renderPeople();
 }
 setInterval(() => { if ($("#plist")) renderPeopleLight(); }, 200);
 
@@ -1102,14 +1272,19 @@ function onHostData(conn, d) {
        la frase y de hace cuánto terminó, así un reloj desajustado no desordena el acta. */
     const dur = Math.max(0, Math.min(120000, +d.dur || 0)), ago = Math.max(0, Math.min(600000, +d.ago || 0));
     const end = Date.now() - ago;
-    ingest({pid:p.pid, text, t:end - dur, end, level:+d.level || 0});
+    ingest({pid:p.pid, text, t:end - dur, end, score: typeof d.score === "number" ? d.score : null});
   }
-  else if (d.t === "level") { p.level = Math.max(0, Math.min(1, +d.v || 0)); }
+  else if (d.t === "level") {
+    p.level = Math.max(0, Math.min(1, +d.v || 0));
+    if (typeof d.s === "number" && isFinite(d.s)) { const now = Date.now(); (p.lv = p.lv || []).push([now, d.s]); while (p.lv.length && p.lv[0][0] < now - 40000) p.lv.shift(); }
+  }
+  else if (d.t === "talk") { p.talking = !!d.v; renderPeople(); }
+  else if (d.t === "cal") { p.cal = !!d.ok; renderPeople(); }
   else if (d.t === "mic") { p.mic = String(d.v); p.local = d.local || p.local; renderPeople(); }
   else if (d.t === "ballot") { if (S.vote && S.vote.open && d.id === S.vote.id) castVote(p.pid, String(d.c)); }
   else if (d.t === "hand") { p.hand = !!d.v; p.handAt = Date.now(); renderHands(); if (p.hand) toast(`${p.name} pide la palabra`); }
 }
-function stateFor(p) { return {t:"state", admitted:!!p.admitted, rec:S.rec, off:S.off, strict:S.meeting.strict, item:S.curItem, itemTitle:S.meeting.items[S.curItem], body:S.meeting.body, title:S.meeting.title, mode:S.meeting.captureMode, vote:voteFor(p)}; }
+function stateFor(p) { return {t:"state", admitted:!!p.admitted, rec:S.rec, off:S.off, strict:S.meeting.strict, item:S.curItem, itemTitle:S.meeting.items[S.curItem], body:S.meeting.body, title:S.meeting.title, mode:S.meeting.captureMode, vocab:vocabList(), vote:voteFor(p)}; }
 function voteFor(p) {
   const v = S.vote; if (!v || !p.admitted) return null;
   const elig = eligibleVoters();
@@ -1168,12 +1343,14 @@ function viewParticipant() {
         <div class="mic-ring" id="ring"><span class="halo" id="halo"></span>${I.mic}</div>
         <div><b style="font-size:18px">${esc(S.me.name)}</b><div class="small muted" id="pMsg">Preparando el micrófono…</div></div>
         <div id="pSup"></div>
+        <button class="ptt" id="pttBtn" type="button" hidden>${I.mic}<span>Pulsa para hablar</span></button>
         <div class="row" style="justify-content:center">
           <button class="btn" id="handBtn" type="button">${I.hand} Pedir la palabra</button>
           <button class="btn" id="leaveBtn" type="button">Salir</button>
         </div>
       </div>
     </div>
+    <div id="calBox" style="margin-top:14px"></div>
     <div class="card pad" style="margin-top:14px">
       <h3 style="margin-bottom:10px">Lo que se ha transcrito de tu voz</h3>
       <div class="mine" id="mine"><p class="small muted">Aparecerá aquí, solo en tu pantalla, para que veas qué se envía.</p></div>
@@ -1181,17 +1358,18 @@ function viewParticipant() {
   </section>`;
   $("#handBtn").onclick = () => { S.me.hand = !S.me.hand; send({t:"hand", v:S.me.hand}); $("#handBtn").className = "btn" + (S.me.hand ? " pri" : ""); $("#handBtn").lastChild.textContent = S.me.hand ? " Bajar la mano" : " Pedir la palabra"; };
   $("#leaveBtn").onclick = leaveParticipant;
+  $("#pttBtn").onclick = togglePTT;
   try { navigator.wakeLock && navigator.wakeLock.request("screen").then(w => wakeLock = w).catch(() => {}); } catch {}
   setupParticipant();
 }
 function send(o) { if (hostConn && hostConn.open) { try { hostConn.send(o); return true; } catch {} } return false; }
 /* Frases pendientes: si la conexión falla un instante, se guardan en memoria y se reenvían al reconectar. */
 const outbox = [];
-function sendUtt(text, t, end, level) { outbox.push({text, t, end, level}); flushOutbox(); }
+function sendUtt(text, t, end, score) { outbox.push({text, t, end, score}); flushOutbox(); }
 function flushOutbox() {
   while (outbox.length) {
     const u = outbox[0];
-    if (!send({t:"utt", text:u.text, dur:u.end - u.t, ago:Date.now() - u.end, level:u.level})) return;
+    if (!send({t:"utt", text:u.text, dur:u.end - u.t, ago:Date.now() - u.end, score:u.score})) return;
     outbox.shift();
   }
 }
@@ -1204,15 +1382,41 @@ async function setupParticipant() {
   S.me.local = sup.local; $("#pSup").innerHTML = privBadge(sup.ok ? sup.local : "none");
   try {
     mic = new Mic({ local: sup.local === "available",
-      onFinal: (text, t, end, level) => { if (!canSpeak()) return; sendUtt(text, t, end, level); S.me.mine.push({text, t}); drawMine(); },
-      onInterim: () => {}, onLevel: l => { S.me.level = l; const h = $("#halo"); if (h) { h.style.opacity = mic && mic.on ? Math.min(1, l*1.6) : 0; h.style.transform = `scale(${1 + l*0.25})`; } },
+      onFinal: (text, t, end, score) => { if (!canSpeak()) return; sendUtt(text, t, end, score); S.me.mine.push({text, t}); drawMine(); },
+      onInterim: () => {}, onActivity: () => { S.me.lastAct = Date.now(); },
+      onLevel: (l, rel) => { S.me.level = l; S.me.rel = rel; const h = $("#halo"); if (h) { h.style.opacity = mic && mic.on ? Math.min(1, l*1.6) : 0; h.style.transform = `scale(${1 + l*0.25})`; } },
       onState: s => { send({t:"mic", v:s, local:S.me.local}); drawPState(); } });
     await mic.open();
   } catch (e) { mic = null; $("#pMsg").textContent = micErrorText(e); send({t:"mic", v:"denied"}); }
-  setInterval(() => { if (S.role === "participant" && mic) send({t:"level", v: +(S.me.level||0).toFixed(2)}); }, 300);
+  setInterval(() => { if (S.role === "participant" && mic) send({t:"level", v: +(S.me.level||0).toFixed(2), s: typeof S.me.rel === "number" ? Math.round(S.me.rel) : null}); }, 250);
+  setInterval(() => { if (S.role === "participant" && S.me.talking && Date.now() - Math.max(S.me.lastAct || 0, S.me.talkSince || 0) > 20000) { togglePTT(); toast("Micrófono liberado tras 20 segundos sin hablar"); } }, 1000);
   connectToHost();
+  if (mic) calibrateParticipant();
 }
-function canSpeak() { const st = S.me.state; if (!st || !st.admitted || !st.rec || st.off) return false; if (st.strict && S.me.local !== "available") return false; return true; }
+async function calibrateParticipant() {
+  const box = $("#calBox"); if (!box || !mic) return;
+  S.me.calibrating = true; applyPStateSafe();
+  const cal = await calibrateUI(box, mic, `Soy ${S.me.name} y participo en esta reunión del Centro Universitario.`);
+  mic.cal = cal; S.me.calibrating = false; send({t:"cal", ok:!!cal});
+  if (box.isConnected) {
+    box.innerHTML = `<div class="row small" style="justify-content:space-between;padding:4px 2px"><span class="${cal ? "" : "muted"}" style="${cal ? "color:var(--ok)" : ""}">${cal ? "Micrófono ajustado a tu voz." : "Micrófono sin ajustar: se usará el ajuste automático."}</span><button class="btn ghost sm" id="reCal" type="button">${cal ? "Repetir ajuste" : "Ajustar ahora"}</button></div>`;
+    $("#reCal").onclick = calibrateParticipant;
+  }
+  applyPStateSafe();
+}
+function applyPStateSafe() { if (S.me && S.me.state) applyPState(); else drawPState(); }
+function togglePTT() {
+  if (!S.me) return;
+  if (!S.me.talking) { S.me.talking = true; S.me.talkSince = Date.now(); S.me.lastAct = Date.now(); }
+  else { S.me.talking = false; S.me.talkGrace = Date.now() + 3000; if (mic) mic.stop(); }
+  try { navigator.vibrate && navigator.vibrate(20); } catch {}
+  send({t:"talk", v:S.me.talking}); applyPStateSafe();
+}
+function baseCanSpeak() { const st = S.me.state; if (!st || !st.admitted || !st.rec || st.off || S.me.calibrating) return false; if (st.strict && S.me.local !== "available") return false; return true; }
+/* canListen: si el micrófono debe estar encendido. canSpeak: si una frase que llega se envía
+   (en «Pulsar para hablar» se aceptan unos segundos de margen al soltar el botón). */
+function canListen() { return baseCanSpeak() && (S.me.state.mode !== "ptt" || !!S.me.talking); }
+function canSpeak() { return baseCanSpeak() && (S.me.state.mode !== "ptt" || !!S.me.talking || Date.now() < (S.me.talkGrace || 0)); }
 function connectToHost() {
   if (typeof Peer === "undefined") { $("#pBody").textContent = "Sin conexión"; $("#pMsg").textContent = IN_CLAUDE ? "La vista previa no puede conectar con otros dispositivos." : "No se pudo cargar el módulo de conexión."; return; }
   peer = new Peer({debug:0});
@@ -1233,8 +1437,9 @@ function connectToHost() {
 function applyPState() {
   const st = S.me.state;
   $("#pBody").textContent = st.body; $("#pItem").textContent = st.admitted ? `Punto ${st.item+1}: ${st.itemTitle}` : "";
-  const should = canSpeak();
-  if (mic) { if (should && !mic.on) mic.start(); else if (!should && mic.on) mic.stop(); }
+  const should = canListen();
+  if (mic) { mic.phrases = st.vocab || []; if (should && !mic.on) mic.start(); else if (!should && mic.on) mic.stop(); }
+  if (st.mode !== "ptt" && S.me.talking) S.me.talking = false;
   drawPState(); renderVoteP();
 }
 function renderVoteP() {
@@ -1271,11 +1476,20 @@ function renderVoteP() {
 function drawPState() {
   const st = S.me.state, msg = $("#pMsg"), ring = $("#ring"), ps = $("#pState"); if (!msg) return;
   const on = !!(mic && mic.on); ring.classList.toggle("on", on);
+  const ptt = $("#pttBtn"); if (ptt) ptt.hidden = true;
   if (!st) { ps.innerHTML = `<span class="pill">Conectando</span>`; return; }
+  if (S.me.calibrating) { ps.innerHTML = `<span class="pill brand">Ajustando</span>`; msg.textContent = "Completa el ajuste del micrófono, más abajo."; return; }
   if (!st.admitted) { ps.innerHTML = `<span class="pill warn">En espera</span>`; msg.textContent = "Esperando a que te admitan en la sala."; return; }
   if (st.strict && S.me.local !== "available") { ps.innerHTML = `<span class="pill warn">Solo escucha</span>`; msg.textContent = "La sala está en modo estricto y este navegador no puede transcribir en local. Tu voz no se transcribirá; pide a la secretaría que recoja tus intervenciones."; return; }
   if (st.off) { ps.innerHTML = `<span class="pill warn">Fuera de acta</span>`; msg.textContent = "Tramo fuera de acta. Tu micrófono está apagado."; return; }
   if (!st.rec) { ps.innerHTML = `<span class="pill">En pausa</span>`; msg.textContent = "La transcripción está en pausa. Tu micrófono está apagado."; return; }
+  if (st.mode === "ptt") {
+    ptt.hidden = false; ptt.classList.toggle("on", !!S.me.talking);
+    ptt.lastElementChild.textContent = S.me.talking ? "Hablando · pulsa al terminar" : "Pulsa para hablar";
+    ps.innerHTML = S.me.talking ? `<span class="pill rec"><span class="dot live"></span>Hablando</span>` : `<span class="pill ok">Preparado</span>`;
+    msg.textContent = S.me.talking ? "Se transcribe tu voz. Pulsa el botón cuando termines." : "Pulsa el botón cuando vayas a hablar.";
+    return;
+  }
   ps.innerHTML = `<span class="pill rec"><span class="dot live"></span>Transcribiendo</span>`; msg.textContent = on ? "Tu micrófono está activo. Habla con normalidad." : "Activando el micrófono…";
 }
 function drawMine() { const el = $("#mine"); if (!el) return; el.innerHTML = S.me.mine.slice(-30).map(m => `<div><span class="mono small muted">${hhmm(m.t)}</span> ${esc(m.text)}</div>`).join(""); el.scrollTop = el.scrollHeight; }
@@ -1297,7 +1511,7 @@ function scrubNames(text, map) {
   S.people.forEach(p => { const parts = [p.name, ...p.name.split(/\s+/).filter(w => w.length > 3)]; parts.forEach(n => { const re = new RegExp("\\b" + n.replace(/[.*+?^${}()|[\]\\]/g,"\\$&") + "\\b", "gi"); t = t.replace(re, map.get(p.pid)); }); });
   return t;
 }
-function transcriptText({anon=false, times=true} = {}) {
+function transcriptText({anon=false, times=true, original=false} = {}) {
   const map = anonMap(); const out = []; let last = -1;
   S.utts.forEach(u => {
     if (u.item !== last) { last = u.item; out.push(`\n## Punto ${u.item+1}. ${S.meeting.items[u.item]}`); }
@@ -1305,7 +1519,7 @@ function transcriptText({anon=false, times=true} = {}) {
     if (u.kind === "system") out.push(`${tm}(${anon ? scrubNames(u.text, map) : u.text})`);
     else if (u.kind === "vote") out.push(`${tm}VOTACIÓN${u.vote.mode === "live" ? (u.vote.secret ? " SECRETA" : " PÚBLICA") : ""} — ${u.vote.subject}: a favor ${u.vote.yes}, en contra ${u.vote.no}, abstenciones ${u.vote.abs}${u.vote.mode === "live" ? ` (votaron ${u.vote.cast} de ${u.vote.eligible})` : ""}. Resultado: ${u.vote.result}.${anon ? "" : voterDetailText(u.vote)}`);
     else if (u.kind === "note") out.push(`${tm}NOTA DE SECRETARÍA: ${anon ? scrubNames(u.text, map) : u.text}`);
-    else { const who = anon ? map.get(u.pid) : u.name; const tg = (u.tags||[]).length ? ` [${u.tags.map(t => t.toUpperCase()).join(", ")}]` : ""; out.push(`${tm}${who}${tg}: ${anon ? scrubNames(u.text, map) : u.text}`); }
+    else { const who = anon ? map.get(u.pid) : u.name; const tg = (u.tags||[]).length ? ` [${u.tags.map(t => t.toUpperCase()).join(", ")}]` : ""; const tx = original && u.orig ? u.orig : u.text; out.push(`${tm}${who}${tg}: ${anon ? scrubNames(tx, map) : tx}`); }
   });
   return out.join("\n").trim();
 }
@@ -1323,13 +1537,14 @@ function renderExport() {
     <p class="small muted">Genera un documento de Word con todas las intervenciones en orden, agrupadas por puntos del orden del día. Se crea en tu dispositivo, sin enviarlo a ningún sitio.</p>
     <div class="seg" role="group" aria-label="Tipo de transcripción"><button type="button" data-ex="nominal" aria-pressed="true">Con nombres</button><button type="button" data-ex="anon" aria-pressed="false">Anonimizada</button></div>
     <label class="check"><input type="checkbox" id="exT" checked> Incluir la hora de cada intervención</label>
+    ${S.utts.some(u => u.orig) ? `<label class="check"><input type="checkbox" id="exO"> Usar el texto original, sin pulir</label>` : ""}
     <button class="btn pri" id="exW" type="button">${I.doc} Descargar transcripción (.docx)</button>
     <button class="btn" id="exC" type="button">Copiar texto con instrucciones para otra IA</button>
     <p class="small muted">La versión anonimizada sustituye cada nombre por «Participante A, B…», también cuando alguien es nombrado dentro de una frase.</p>
   </div>`;
   let anon = false;
   tp.querySelectorAll("[data-ex]").forEach(b => b.onclick = () => { anon = b.dataset.ex === "anon"; tp.querySelectorAll("[data-ex]").forEach(x => x.setAttribute("aria-pressed", x === b)); });
-  $("#exW").onclick = () => exportDocx({kind:"transcript", anon, times:$("#exT").checked});
+  $("#exW").onclick = () => exportDocx({kind:"transcript", anon, times:$("#exT").checked, original: !!($("#exO") && $("#exO").checked)});
   $("#exC").onclick = () => copyText(buildPrompt(anon ? "anon" : "nominal", {anon}));
 }
 function logoBytes() { const b = atob(LOGO.split(",")[1]); const u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u; }
@@ -1339,7 +1554,7 @@ function loadDocx() {
   if (!docxLoading) docxLoading = new Promise((ok, ko) => { const s = document.createElement("script"); s.src = "https://unpkg.com/docx@8.5.0/build/index.umd.js"; s.onload = () => ok(window.docx); s.onerror = () => { docxLoading = null; ko(new Error("docx")); }; document.head.appendChild(s); });
   return docxLoading;
 }
-async function exportDocx({kind, anon=false, times=true, body=""}) {
+async function exportDocx({kind, anon=false, times=true, body="", original=false}) {
   if (!S.utts.length && kind === "transcript") { toast("Todavía no hay nada que exportar"); return; }
   toast("Preparando el documento…");
   let D; try { D = await loadDocx(); } catch { toast("No se pudo cargar el generador de Word. Comprueba la conexión."); return; }
@@ -1364,7 +1579,8 @@ async function exportDocx({kind, anon=false, times=true, body=""}) {
         const who = u.kind === "note" ? "Nota de secretaría" : (anon ? map.get(u.pid) : u.name);
         runs.push(new TextRun({text:`${who}: `, bold:true, size:22, font:"Calibri"}));
         if ((u.tags||[]).length) runs.push(new TextRun({text:`[${u.tags.map(t => t.toUpperCase()).join(", ")}] `, bold:true, color:"1E7A4C", size:18, font:"Calibri"}));
-        runs.push(new TextRun({text: anon ? scrubNames(u.text, map) : u.text, size:22, font:"Cambria"}));
+        const tx = original && u.orig ? u.orig : u.text;
+        runs.push(new TextRun({text: anon ? scrubNames(tx, map) : tx, size:22, font:"Cambria"}));
       }
       kids.push(new Paragraph({spacing:{after:100, line:290}, children:runs}));
     });
@@ -1446,29 +1662,120 @@ function renderAI() {
   $("#aiDoc").onclick = () => exportDocx({kind:"acta", anon: A.mode === "anon", body: A.text});
   $("#aiCp").onclick = () => copyText(A.text);
 }
+async function callAI(prompt, {onText, tier = "default", maxTokens = 8000} = {}) {
+  if (IN_CLAUDE) {
+    const sample = await window.claude.use("sample");
+    if (!sample) throw {code:"not_granted"};
+    const r = await sample(prompt, {modelTier:tier, cache:false, onText});
+    return r.text;
+  }
+  if (!S.apiKey) throw {code:"nokey"};
+  const res = await fetch("https://api.anthropic.com/v1/messages", {method:"POST", headers:{"content-type":"application/json", "x-api-key":S.apiKey, "anthropic-version":"2023-06-01", "anthropic-dangerous-direct-browser-access":"true"},
+    body: JSON.stringify({model:S.aiModel || "claude-sonnet-5-5", max_tokens:maxTokens, messages:[{role:"user", content:prompt}]})});
+  if (!res.ok) throw {code: res.status === 401 ? "badkey" : res.status === 429 ? "rate_limited" : "http", message:`La IA ha respondido con un error (${res.status}).`};
+  const j = await res.json(); const text = (j.content || []).filter(c => c.type === "text").map(c => c.text).join("\n");
+  if (onText) onText({text});
+  return text;
+}
+function aiErrorText(e) {
+  const c = e && e.code;
+  if (c === "nokey") return "Añade una clave de API de Anthropic en «Pulir con IA» o en la pestaña Acta con IA.";
+  if (c === "badkey") return "La clave de API no es válida.";
+  if (c === "not_granted") return "No se ha concedido permiso para usar la IA en esta página.";
+  if (c === "rate_limited") return "Demasiadas peticiones seguidas. Espera un minuto.";
+  return (e && e.message) || "No se ha podido completar la petición a la IA.";
+}
 async function runAI() {
   const A = S.ai;
   if (!S.utts.some(u => u.kind === "speech" || u.kind === "note")) { toast("Aún no hay intervenciones para redactar el acta"); return; }
+  if (!IN_CLAUDE && !S.apiKey) { toast("Añade una clave de API o usa «Copiar texto con instrucciones para otra IA» en Exportar.", 5000); return; }
   const prompt = buildPrompt(A.mode);
   A.busy = true; A.text = ""; renderAI();
-  const out = () => $("#aiOut");
   try {
-    if (IN_CLAUDE) {
-      const sample = await window.claude.use("sample");
-      if (!sample) throw {code:"not_granted"};
-      const r = await sample(prompt, {modelTier:"complex", cache:false, onText: ({text}) => { A.text = text; const o = out(); if (o) o.textContent = text; }});
-      A.text = r.text;
-    } else {
-      if (!S.apiKey) { A.busy = false; renderAI(); toast("Añade una clave de API o usa «Copiar texto con instrucciones para otra IA» en Exportar.", 5000); return; }
-      const res = await fetch("https://api.anthropic.com/v1/messages", {method:"POST", headers:{"content-type":"application/json", "x-api-key":S.apiKey, "anthropic-version":"2023-06-01", "anthropic-dangerous-direct-browser-access":"true"},
-        body: JSON.stringify({model:S.aiModel || "claude-sonnet-5-5", max_tokens:8000, messages:[{role:"user", content:prompt}]})});
-      if (!res.ok) throw {message: res.status === 401 ? "La clave de API no es válida." : `La IA ha respondido con un error (${res.status}).`};
-      const j = await res.json(); A.text = (j.content || []).filter(c => c.type === "text").map(c => c.text).join("\n");
-    }
-  } catch (e) {
-    toast(e && e.code === "not_granted" ? "No se ha concedido permiso para usar la IA en esta página." : e && e.code === "rate_limited" ? "Demasiadas peticiones seguidas. Espera un minuto." : (e && e.message) || "No se pudo redactar el acta.", 5000);
-  }
+    A.text = await callAI(prompt, {tier:"complex", onText: ({text}) => { A.text = text; const o = $("#aiOut"); if (o) o.textContent = text; }});
+  } catch (e) { toast(aiErrorText(e), 5000); }
   A.busy = false; renderAI();
+}
+
+/* -------------------- Pulido de la transcripción -------------------- */
+function parseJSONArray(t) { const a = String(t).indexOf("["), b = String(t).lastIndexOf("]"); if (a < 0 || b <= a) return null; try { return JSON.parse(t.slice(a, b + 1)); } catch { return null; } }
+function polishPrompt(batch, level) {
+  const labels = new Map(); let n = 0; const lab = pid => { if (!labels.has(pid)) labels.set(pid, "P" + (++n)); return labels.get(pid); };
+  const all = speechUtts(), i0 = all.indexOf(batch[0]); const prev = all.slice(Math.max(0, i0 - 4), Math.max(0, i0));
+  const g = String(S.meeting.glossary || "").trim();
+  const legible = level === "legible";
+  return `Eres corrector de transcripciones de reuniones de un centro universitario español. Recibes intervenciones obtenidas por reconocimiento automático de voz, en español de España. Devuelve cada una corregida.
+
+Reglas:
+- Añade puntuación, tildes, mayúsculas y signos de interrogación y exclamación de apertura.
+- Corrige las palabras mal reconocidas solo cuando el contexto (orden del día, nombres, vocabulario y frases vecinas) deja claro cuál era la palabra correcta.
+- No resumas, no añadas información, no interpretes y no cambies el sentido, el registro ni la persona gramatical. Cada intervención sigue diciendo lo mismo, con las palabras de quien habla.
+- Conserva todas las cifras, fechas, nombres y compromisos.
+- Si un fragmento es ininteligible, déjalo como está.
+${legible ? "- Además, elimina muletillas (eh, este, o sea, pues nada, bueno bueno, vale vale), repeticiones y arranques fallidos, y ordena la frase para que se entienda. Conserva en lo posible las palabras originales." : "- No elimines ni reordenes palabras salvo para corregir errores evidentes del reconocimiento. Corrige solo lo imprescindible."}
+
+CONTEXTO
+Órgano: ${S.meeting.body}
+Orden del día: ${S.meeting.items.map((x, i) => `${i + 1}. ${x}`).join(" | ")}
+Nombres propios que pueden aparecer: ${[...S.people.values()].filter(p => p.admitted).map(p => p.name).join(", ") || "—"}
+Vocabulario específico: ${g || "—"}
+${prev.length ? `Intervenciones anteriores, solo como contexto (no las devuelvas):\n${prev.map(u => `${lab(u.pid)}: ${u.text}`).join("\n")}\n` : ""}
+INTERVENCIONES A CORREGIR (JSON; "hablante" es una etiqueta anónima):
+${JSON.stringify(batch.map(u => ({id:u.id, hablante:lab(u.pid), texto:u.text})))}
+
+Responde solo con un array JSON, una entrada por intervención y en el mismo orden: [{"id":"…","texto":"…"}]`;
+}
+function renderPolishState() {
+  const b = $("#polBtn"); if (!b) return;
+  b.disabled = !!S.polish.busy;
+  b.innerHTML = `${I.spark} ${S.polish.busy ? `Puliendo${S.polish.progress ? " " + S.polish.progress : ""}…` : S.polish.auto ? "Pulido automático activado" : "Pulir con IA"}`;
+}
+function openPolish() {
+  const pending = speechUtts().filter(u => !u.polished && !u.edited && u.text).length;
+  const P = S.polish;
+  modal("Pulir la transcripción", `<div class="stack">
+    <p class="small muted">La IA corrige la transcripción para que se lea con claridad, sin resumir ni cambiar lo que dijo cada persona. El texto original se conserva y puedes volver a él en cualquier momento.</p>
+    <div class="vcard" role="radiogroup" aria-label="Grado de corrección">
+      <label><input type="radio" name="pl" value="fiel" ${P.level === "fiel" ? "checked" : ""}><b>Fiel</b>Puntuación, tildes, mayúsculas y palabras mal reconocidas. No toca nada más.</label>
+      <label><input type="radio" name="pl" value="legible" ${P.level === "legible" ? "checked" : ""}><b>Legible</b>Además quita muletillas, repeticiones y frases a medias, y ordena cada intervención para que se entienda.</label>
+    </div>
+    <label class="check"><input type="checkbox" id="plAuto" ${P.auto ? "checked" : ""}><span>Pulir automáticamente durante la reunión, cada minuto</span></label>
+    ${IN_CLAUDE ? "" : `<label class="f">Clave de API de Anthropic<input type="password" id="plKey" value="${esc(S.apiKey)}" autocomplete="off" placeholder="sk-ant-…"></label>`}
+    <div class="notice info small">Se envía el texto de las intervenciones al modelo de IA, sin indicar quién dice cada frase. Los nombres de los asistentes y el vocabulario se envían para que la IA los reconozca. La aplicación no guarda copia.</div>
+  </div>`, [{label:"Cancelar"}, {label: pending ? `Pulir ${pending} ${pending === 1 ? "intervención" : "intervenciones"}` : "Guardar", cls:"pri", act: m => {
+    P.level = m.querySelector("input[name=pl]:checked").value; P.auto = $("#plAuto", m).checked;
+    const k = $("#plKey", m); if (k) S.apiKey = k.value.trim();
+    if (!IN_CLAUDE && !S.apiKey) { toast("Añade la clave de API para usar la IA"); return true; }
+    renderPolishState(); if (pending) polishRun(true);
+  }}]);
+}
+async function polishRun(force) {
+  const P = S.polish; if (P.busy) return;
+  const targets = speechUtts().filter(u => !u.polished && !u.edited && u.text && (force || !S.rec || Date.now() - u.end > 8000));
+  if (!targets.length) { if (force) toast("No hay intervenciones nuevas que pulir"); return; }
+  P.busy = true; renderPolishState(); let done = 0, changed = 0, skipped = 0;
+  try {
+    for (let i = 0; i < targets.length; i += 15) {
+      const batch = targets.slice(i, i + 15), snap = new Map(batch.map(u => [u.id, u.text]));
+      P.progress = `${Math.min(i + 15, targets.length)}/${targets.length}`; renderPolishState();
+      let arr;
+      try { arr = parseJSONArray(await callAI(polishPrompt(batch, P.level), {tier:"default"})); }
+      catch (e) { if (["nokey","badkey","not_granted","rate_limited"].includes(e && e.code)) throw e; skipped += batch.length; continue; }
+      if (!Array.isArray(arr)) { skipped += batch.length; continue; }
+      for (const r of arr) {
+        const u = batch.find(x => x.id === (r && r.id)); if (!u || typeof r.texto !== "string") continue;
+        const o = snap.get(u.id), nt = r.texto.replace(/\s+/g, " ").trim();
+        if (u.text !== o || u.polished || u.edited || !nt) continue;
+        const ratio = nt.length / o.length;
+        if (ratio > 1.6 || ratio < (P.level === "fiel" ? 0.6 : 0.3)) { skipped++; continue; }   // salvaguarda: descarta cambios desproporcionados
+        u.polished = true; done++;
+        if (nt !== o) { u.orig = o; u.text = nt; changed++; }
+      }
+      renderTranscript();
+    }
+    if (force || changed) toast(`Pulidas ${done} ${done === 1 ? "intervención" : "intervenciones"}${skipped ? `. ${skipped} se han dejado como estaban` : ""}.`, 4000);
+  } catch (e) { toast(aiErrorText(e), 5000); if (e && ["nokey","badkey","not_granted"].includes(e.code)) P.auto = false; }
+  P.busy = false; P.progress = ""; renderPolishState(); renderTranscript(); renderTabs();
 }
 
 /* -------------------- Fin de la reunión -------------------- */
@@ -1477,7 +1784,7 @@ function endMeeting() {
     [{label:"Volver a la reunión"},{label:"Descargar transcripción", act: () => { exportDocx({kind:"transcript"}); return true; }},{label:"Finalizar y borrar todo", cls:"rec", act: () => {
       S.people.forEach(p => { try { p.conn && p.conn.send({t:"end"}); } catch {} });
       setTimeout(() => { try { peer && peer.destroy(); } catch {} peer = null; }, 400);
-      if (mic) { mic.close(); mic = null; } clearInterval(clockTimer); demoStop(); const vp = $("#vpanel"); if (vp) vp.remove();
+      if (mic) { mic.close(); mic = null; } clearInterval(clockTimer); clearInterval(polishTimer); demoStop(); const vp = $("#vpanel"); if (vp) vp.remove();
       S = freshState(); window.onbeforeunload = null;
       endScreen("Reunión finalizada. Se ha borrado todo el contenido de este dispositivo.");
     }}]);
@@ -1495,8 +1802,8 @@ const DEMO_SCRIPT = [
   ["d3","Solo una corrección: en el segundo punto pone que la entrega era el día doce y fue el día catorce."],
   ["d1","De acuerdo, se corrige. Si no hay más observaciones, damos el acta por aprobada con esa modificación.", ["acuerdo"]],
   ["sys:item",1],
-  ["d1","Pasamos al calendario de pruebas de evaluación del primer cuatrimestre. Tenéis la propuesta en el documento compartido."],
-  ["d2","Me preocupa que en tercero coincidan tres pruebas en la semana del diecinueve de enero. Para el alumnado es mucha carga."],
+  ["d1","pasamos al calendario de pruebas de evaluación del primer cuatrimestre tenéis la propuesta en el documento compartido"],
+  ["d2","eh bueno pues a ver me preocupa que en tercero coincidan eh tres pruebas en la semana del 19 de enero que para el alumnado es mucha carga la verdad"],
   ["d4","Yo puedo mover la prueba práctica de Educación Física a la semana anterior sin problema."],
   ["dup","d2","Yo puedo mover la prueba práctica de educación física a la semana anterior sin problema"],
   ["d3","Entonces quedarían dos pruebas esa semana, que me parece razonable."],
@@ -1518,7 +1825,7 @@ function startDemo() {
   const today = new Date();
   S.meeting = { body:"Comisión de Coordinación Horizontal de 3.º y 4.º", title:"Sesión ordinaria · Ejemplo", date:today.toISOString().slice(0,10), time:"10:00", place:"Sala de juntas, edificio principal", type:"Ordinaria",
     chair:"Lucía Moreno Cabrera, presidenta", secretary:"Secretaría de la comisión", items:["Lectura y aprobación, si procede, del acta de la sesión anterior","Calendario de pruebas de evaluación del primer cuatrimestre","Trabajos interdisciplinares de 4.º curso","Ruegos y preguntas"],
-    captureMode:"multi", strict:true, admit:true, me:"Secretaría", myMic:false };
+    captureMode:"multi", strict:true, admit:true, me:"Secretaría", myMic:false, glossary:"Prácticum, TFG, PAT, CUSAFA" };
   S.people.set("host", {pid:"host", name:"Secretaría", role:"Secretaría", admitted:true, local:"demo", mic:"off", joinedAt:Date.now(), color:colorFor(0), self:true});
   DEMO_PEOPLE.forEach((p,i) => S.people.set(p.pid, {...p, admitted:i < 3, local:"demo", mic:"off", joinedAt:Date.now(), consentAt:Date.now(), color:colorFor(i+1), level:0}));
   demoIdx = 0;
@@ -1546,11 +1853,11 @@ function demoStep() {
   if (st[0] === "hand") { const p = S.people.get(st[1]); p.hand = true; p.handAt = Date.now(); renderHands(); return; }
   if (st[0] === "livevote") { openLiveVote(st[1], false); toast("Votación abierta. Vota desde el panel y ciérrala cuando quieras.", 4500); return; }
   if (st[0] === "vote") { S.utts.push({id:uid(), kind:"vote", pid:"host", name:"Votación", text:st[1], vote:{subject:st[1], yes:st[2], no:st[3], abs:st[4], result:st[5]}, t:Date.now(), item:S.curItem, tags:[]}); renderTranscript(); renderTabs(); return; }
-  if (st[0] === "dup") { ingest({pid:st[1], text:st[2], t:Date.now()-1500, level:0.12}); return; }
+  if (st[0] === "dup") { ingest({pid:st[1], text:st[2], t:Date.now()-3500, end:Date.now()-1200, score:-15}); return; }
   const p = S.people.get(st[0]);
   if (!p.admitted) { if (st[0] === "d4") { admit("d4", true); p.mic = "on"; } }
   p.level = 0.55 + Math.random()*0.3;
-  ingest({pid:st[0], text:st[1], t:Date.now(), level:0.6, tags:st[2] ? [...st[2]] : []});
+  ingest({pid:st[0], text:st[1], t:Date.now()-1800, end:Date.now(), score:-1, tags:st[2] ? [...st[2]] : []});
 }
 
 /* -------------------- Arranque -------------------- */
